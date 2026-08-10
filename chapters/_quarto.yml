@@ -12,14 +12,14 @@ book:
     - index.qmd
     - 00_computacion.md
     - 01_ecosistema.md
-    - 02_intro_ml.md
-    - 03_crisp_dm.md
-    - 04_evaluacion_modelos.md
-    - 05_arboles.qmd
-    - 06_bosques.qmd
-    - 07_boosting.qmd
-    - 08_redes_neuronales.qmd
-    - proyecto_final.md
+    #- 02_intro_ml.md
+    #- 03_crisp_dm.md
+    #- 04_evaluacion_modelos.md
+    #- 05_arboles.qmd
+    #- 06_bosques.qmd
+    #- 07_boosting.qmd
+    #- 08_redes_neuronales.qmd
+    #- proyecto_final.md
   open-graph: true
 
 bibliography: references.bib

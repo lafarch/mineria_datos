@@ -1,7 +1,5 @@
 # El Ecosistema de Datos
 
-[Quiz](https://docs.google.com/forms/d/e/1FAIpQLScAo2HyiwnueSkSDfpnpB8tNQICcXpqVMA8003irBc0F7mcVw/viewform?usp=dialog)
-
 
 ## Introducción
 
@@ -63,7 +61,7 @@ El **Aprendizaje Automático** es un subconjunto de la Inteligencia Artificial c
 
 - **Se centra en la automatización**: Una vez entrenado, un modelo de ML puede procesar millones de transacciones en segundos para detectar fraudes o recomendar productos.
 
-- **Prioriza la precisión predictiva**: El objetivo es maximizar métricas como exactitud, recall o AUC para minimizar errores de predicción.
+- **Prioriza la precisión predictiva**: El objetivo es que el modelo se equivoque lo menos posible. Más adelante en el curso veremos cómo medimos formalmente "qué tan bien" predice un modelo.
 
 #### Preguntas que responde el Machine Learning:
 - *"¿Qué clientes tienen más del 80% de probabilidad de desertar el próximo mes?"*
@@ -102,7 +100,7 @@ Adoptaremos el rol de **Mineros de Datos**:
 
 1. **Primero actuamos como estrategas**: Comprenderemos el problema de negocio y los datos antes de tocar un algoritmo.
 
-2. **Luego encendemos los motores de ML**: Usaremos herramientas como árboles de decisión, random forests, gradient boosting y clustering para extraer insights.
+2. **Luego encendemos los motores de ML**: Usaremos distintas herramientas de aprendizaje automático —cada una con sus propias fortalezas— para extraer insights de los datos. Iremos conociéndolas una a una a lo largo del curso.
 
 3. **Finalmente evaluamos con criterio empresarial**: No nos preguntaremos solo "¿qué tan preciso es el modelo?" sino **"¿cuánto dinero genera o ahorra este modelo?"**
 
@@ -114,11 +112,9 @@ Esta filosofía valida que la **intuición de negocios debe preceder al código*
 
 ### De Bits a Dólares: Los Datos como Activo Estratégico
 
-En 2006, Clive Humby acuñó la frase: *"Los datos son el nuevo petróleo"*. Pero esta analogía es incompleta. A diferencia del petróleo:
+El matemático británico **Clive Humby** —cocreador del programa de lealtad *Tesco Clubcard*, uno de los primeros usos masivos de datos de consumo para personalizar marketing— acuñó en 2006 la frase: *"Los datos son el nuevo petróleo"*.
 
-- Los datos **no se agotan** cuando se usan (son reutilizables).
-- Los datos **no tienen valor por sí mismos**: deben ser refinados, modelados y convertidos en insights accionables.
-- El mismo conjunto de datos puede generar valor de múltiples formas (predicción de churn, segmentación, detección de fraude).
+La analogía es útil pero incompleta: el petróleo tiene valor apenas se extrae, mientras que los datos no lo tienen por sí mismos, hay que refinarlos, modelarlos y convertirlos en insights accionables.
 
 La brecha crítica que cierra este curso es la distancia entre **"tener datos"** y **"generar valor con datos"**.
 
@@ -244,17 +240,41 @@ Los modelos de ML aprenden de datos históricos. Si esos datos contienen **sesgo
 **1. COMPAS (Correctional Offender Management Profiling for Alternative Sanctions)**
 
 - **Contexto**: Sistema usado en EE.UU. para predecir reincidencia criminal y ayudar en decisiones de libertad condicional.
-- **Problema**: Un estudio de ProPublica (2016) encontró que el sistema tenía una tasa de **falsos positivos** significativamente mayor para personas afroamericanas que para personas blancas. Esto significa que el modelo predecía incorrectamente que personas afroamericanas reincidirían más frecuentemente.
+
+> **Para discutir:** Un estudio de ProPublica (2016) comparó las predicciones del sistema entre personas afroamericanas y blancas. ¿Qué tipo de sesgo esperarías encontrar? ¿Qué consecuencia tendría para las personas afectadas?
+
+::: {.callout-tip collapse="true"}
+## ¿Qué encontró ProPublica?
+
+- **Problema**: El sistema tenía una tasa de **falsos positivos** significativamente mayor para personas afroamericanas que para personas blancas. Esto significa que el modelo predecía incorrectamente que personas afroamericanas reincidirían más frecuentemente.
 - **Implicación**: Personas fueron encarceladas por más tiempo basándose en un modelo sesgado.
+:::
 
 **2. Reconocimiento Facial**
 
-- **Problema**: Los sistemas de reconocimiento facial entrenados principalmente con imágenes de personas de piel clara tienen tasas de error mucho mayores para personas de piel oscura (hasta 34% de error vs. menos del 1%).
+- **Contexto**: Sistemas de reconocimiento facial se han desplegado ampliamente en vigilancia y control de acceso, entrenados con grandes bases de imágenes de rostros.
+
+> **Para discutir:** Si el conjunto de entrenamiento contiene mucho más ejemplos de personas de piel clara que de piel oscura, ¿qué esperarías que pase con la tasa de error del modelo entre esos grupos? ¿Qué riesgos reales trae eso?
+
+::: {.callout-tip collapse="true"}
+## ¿Qué se encontró?
+
+- **Problema**: Los sistemas entrenados principalmente con imágenes de personas de piel clara tienen tasas de error mucho mayores para personas de piel oscura (hasta 34% de error vs. menos del 1%).
 - **Consecuencia**: Arrestos erróneos, vigilancia discriminatoria.
+:::
 
 **3. Algoritmos de Contratación**
 
-- Amazon discontinuó un sistema de reclutamiento basado en IA después de descubrir que penalizaba currículums que contenían la palabra "mujer" (ej. "Capitana del club de ajedrez femenino"), porque los datos históricos mostraban que la mayoría de contrataciones pasadas fueron hombres.
+- **Contexto**: Amazon desarrolló un sistema de reclutamiento basado en IA para automatizar la revisión de currículums, entrenado con datos de las contrataciones pasadas de la empresa.
+
+> **Para discutir:** Si la mayoría de las contrataciones históricas de la empresa fueron hombres, ¿qué patrón podría "aprender" el modelo? ¿Cómo se manifestaría eso en la práctica?
+
+::: {.callout-tip collapse="true"}
+## ¿Qué pasó?
+
+- **Problema**: El sistema penalizaba currículums que contenían la palabra "mujer" (ej. "capitana del club de ajedrez femenino"), porque los datos históricos mostraban que la mayoría de contrataciones pasadas habían sido hombres.
+- **Consecuencia**: Amazon discontinuó el sistema antes de usarlo en producción, pero el caso expuso cómo los datos históricos pueden codificar y perpetuar sesgos de género.
+:::
 
 #### ¿Por qué ocurren estos sesgos?
 

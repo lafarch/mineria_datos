@@ -1,7 +1,5 @@
 # Fundamentos de Machine Learning
 
-[Quiz](https://forms.gle/stnzur12u14Dbtmv7)
-
 ## Objetivos de Aprendizaje
 
 Al finalizar este capítulo, serás capaz de:

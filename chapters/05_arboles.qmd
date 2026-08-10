@@ -1,7 +1,5 @@
 # Árboles de Decisión
 
-[Quiz](https://forms.gle/uXDF4ioX8VcPaLeV6)
-
 ## Introducción
 
 Los **árboles de decisión** son uno de los métodos más intuitivos y ampliamente utilizados en el aprendizaje supervisado. A diferencia de los métodos lineales como la regresión logística, los árboles pueden capturar relaciones no lineales complejas e interacciones entre variables de forma natural, produciendo modelos que son fáciles de interpretar y visualizar.

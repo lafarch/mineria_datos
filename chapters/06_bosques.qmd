@@ -8,7 +8,6 @@ execute:
 
 # Métodos de Ensemble: Bagging y Random Forest
 
-[Quiz](https://forms.gle/r1T2YfnJVg9vnR9T9)
 
 ```{python}
 #| include: false

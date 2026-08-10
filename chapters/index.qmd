@@ -43,32 +43,22 @@ Random Forests. Reducción de varianza. Importancia de Variables para estrategia
 ### Redes neuronales
 Introducción a redes neuronales y arquitecturas populares.
 
-## IV. Detección de Patrones
+## IV. Temas selectos (con suficiente tiempo)
 
-### Reglas de Asociación
-**Análisis de Cesta de Mercado.** Algoritmo Apriori. Estrategias de *Cross-selling* en Retail.
-
-### Clustering (Segmentación)
-K-Means y Jerárquico. Definición de "Personas" y perfiles de clientes. Marketing segmentado.
+### Estimación de elasticidades
+Problemas de regresión simple, 2SLS, Double ML.
 
 ### Detección de Anomalías
-**Isolation Forests.** Detección de Fraude y Riesgos Operativos. Gestión de alertas.
+Isolation Forests.
 
 # Evaluación {.unnumbered}
 
 - Tareas (15%)
 - Quizes (25%)
-- Examen parcial: 15 de abril 2026 (30%)
+- Examen parcial (30%)
 - Proyecto final (30%):
   - Entrega (75%)
-  - Exposición (25%)
-
-Canal de [Slack](https://join.slack.com/t/mineradedatosgroup/shared_invite/zt-3nr70lgli-9OyPaeOd08VCmZl5~LshAQ)
-
-Existirá una parte extra a los alumnos que contribuyan al aprendizaje de sus compañeros:
-
-- Contribuciones al repositorio: añadiendo redacción más entendible, añadiendo ejemplos particulares a sus carreras, etc.
-- Actividad en el canal de Slack: contestando dudas de sus compañeros, iniciando discusiones para resolver problemas. 
+  - Exposición (25%) 
 
 # Profesor
 
