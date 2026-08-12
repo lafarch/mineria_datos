@@ -337,6 +337,43 @@ El error total de cualquier modelo predictivo se puede descomponer en tres parte
 
 $$\text{Error Total} = \text{Sesgo}^2 + \text{Varianza} + \text{Error Irreducible } (\epsilon)$$
 
+::: {.callout-note}
+#### Pregunta para discutir
+
+Tienen doce meses de datos de una campaña: cuánto se gastó en marketing y cuántos ingresos entraron. Tres analistas proponen tres modelos distintos.
+
+![Tres curvas candidatas](imgs/curvas_candidatas.png)
+
+**Voten a mano alzada:** ¿cuál de las tres predecirá mejor los ingresos del **próximo** mes, uno que todavía no está en la gráfica? A, B o C.
+
+Ahora discutan dos minutos con la persona de al lado. Quien cambió de opinión, explique por qué. **Voten otra vez.**
+
+Dos observaciones antes de ver la respuesta. La curva C no se equivoca en ni un solo punto de los doce: ¿por qué alguien votaría por otra? Y la recta A se equivoca en casi todos: ¿por qué alguien votaría por ella?
+:::
+
+::: {.callout-tip collapse="true"}
+#### Resolución
+
+Estos son los seis meses siguientes, que ninguno de los tres modelos vio al ajustarse:
+
+![Tres curvas candidatas con datos nuevos](imgs/curvas_candidatas_revelado.png)
+
+| Modelo | Error cuadrático medio en datos nuevos |
+|--------|---------------------------------------:|
+| A — Recta | 6.10 |
+| B — Curva suave | **0.29** |
+| C — Pasa por los 12 puntos | 2.01 |
+
+**Gana la de en medio, y las dos extremas pierden por goliza.** Ese es el resultado importante, y conviene ver que **pierden por razones opuestas**:
+
+- La recta **A** ni siquiera podía capturar la forma de los datos. Se equivoca en el histórico y se equivoca en los datos nuevos, por la misma razón las dos veces: es demasiado simple para el fenómeno. Su error no viene de los datos, viene de la decisión de usar una recta.
+- La curva **C** capturaba el histórico a la perfección —error cero en los doce puntos— y aun así falla siete veces más que B en datos nuevos. Su problema es el contrario: es tan flexible que se dedicó a seguir el zigzag accidental de estos doce meses en particular. En el tramo final llega a predecir ingresos negativos, algo que ningún dato sugería.
+
+Fíjense en lo que esto significa para su intuición: **el error en los datos que ya tienen no les dice cuál modelo es mejor.** C ganaba 12 a 0 en el histórico y perdió en lo único que importa.
+
+Las dos formas de perder tienen nombre, y la tensión entre ellas es el compromiso que gobierna todos los modelos de este curso.
+:::
+
 ### El Sesgo (Bias): El Error de la Simplificación
 
 El sesgo ocurre cuando el modelo hace **suposiciones demasiado simplistas** sobre la función subyacente $f(x)$ para facilitar el aprendizaje.
@@ -353,7 +390,7 @@ La varianza es la sensibilidad del modelo a las **fluctuaciones aleatorias** (ru
 
 - *Síntoma (Overfitting/Sobreajuste)*: El modelo tiene un rendimiento espectacular en datos de entrenamiento (quizás 99% de precisión) pero falla miserablemente en datos nuevos. No generaliza; solo recuerda
 
-#### Ejemplo gráfico:
+#### El mismo fenómeno, visto de otra forma
 
 ![Ejemplo gráfico](imgs/bias_variance.png)
 
