@@ -128,6 +128,46 @@ Y dejamos que la computadora **descubra** las reglas por sí misma.
 
 Para el ingeniero de negocios, descomponer esta definición es vital para **identificar oportunidades de ML** en la empresa:
 
+::: {.callout-note}
+#### Pregunta para discutir
+
+Aquí hay seis situaciones reales. Para cada una, en equipo, decidan tres cosas y anótenlas:
+
+1. ¿Qué es la **Tarea** ($T$), la **Experiencia** ($E$) y el **Rendimiento** ($P$)?
+2. ¿Hay respuestas correctas históricas disponibles, o no?
+3. ¿La respuesta que queremos es un número o una categoría?
+
+| # | Situación |
+|--:|-----------|
+| 1 | Una inmobiliaria quiere **estimar el precio de venta** de una casa antes de listarla. Tiene el historial de 8,000 ventas con características de cada propiedad y el precio al que se cerró. |
+| 2 | Un banco quiere **detectar transacciones fraudulentas**. Tiene millones de transacciones históricas, y su equipo antifraude marcó cuáles resultaron ser fraude. |
+| 3 | Una tienda departamental quiere **entender qué tipos de cliente tiene** para diseñar campañas distintas. Tiene tres años de compras, pero nunca ha clasificado a nadie. |
+| 4 | Una empresa quiere **estimar en cuántos días entregará** un proveedor su próximo pedido. Tiene tres años de entregas con la fecha prometida y la fecha real. |
+| 5 | Un call center tiene presupuesto para llamar a **500 de sus 50,000 clientes** y ofrecerles un producto. Tiene el registro de quién aceptó y quién no en campañas anteriores. |
+| 6 | Una planta quiere **anticipar la falla de una máquina**. Tiene dos años de lecturas de sensores, pero la máquina nunca ha fallado en ese periodo. |
+
+Dos de las seis no tienen una sola respuesta correcta. ¿Cuáles, y de qué depende?
+:::
+
+::: {.callout-tip collapse="true"}
+#### Resolución
+
+| # | Paradigma | Tipo | Por qué |
+|--:|-----------|------|---------|
+| 1 | Supervisado | Regresión | Hay respuestas históricas (el precio de cierre) y la respuesta es un número |
+| 2 | **Depende** | Clasificación o detección de anomalías | Ver abajo |
+| 3 | No supervisado | Clusterización | No existe la columna "tipo de cliente"; hay que descubrirla |
+| 4 | Supervisado | Regresión | Hay historial de días reales y la respuesta es un número |
+| 5 | **Depende** | Clasificación, pero lo que de verdad quieres es ordenar | Ver abajo |
+| 6 | No supervisado | Detección de anomalías | No hay ni una sola falla etiquetada; no hay de qué aprender el patrón de "falla" |
+
+**El caso 2 depende de si existen las etiquetas.** Con el trabajo del equipo antifraude, es aprendizaje supervisado de clasificación: aprendes el mapeo de transacción a fraude/legítimo. Sin ese trabajo, lo único que puedes hacer es detección de anomalías no supervisada: el sistema no sabe qué es un ataque, pero puede detectar que *este* comportamiento es raro comparado con el tráfico normal. Es el mismo problema de negocio y dos problemas de Machine Learning completamente distintos.
+
+**El caso 5 revela algo más fino.** Formalmente es clasificación binaria: ¿acepta o no acepta? Pero fíjense en la restricción real: solo puedes llamar a 500 de 50,000. No necesitas saber *quién aceptará*; necesitas **ordenar** a los 50,000 y llamar a los primeros 500. Eso no lo resuelve una etiqueta, lo resuelve una probabilidad bien construida. Volveremos a este punto en la sesión 3.
+
+**La conclusión de fondo.** El paradigma no lo determina el problema de negocio, lo determina la **Experiencia disponible** ($E$). Antes de preguntar "¿qué algoritmo uso?", la pregunta es "¿qué respuestas correctas tengo, y quién las produjo?".
+:::
+
 | Componente | Definición | Ejemplo: Detección de Fraude | Ejemplo: Valoración Inmobiliaria |
 |------------|------------|------------------------------|----------------------------------|
 | **Tarea ($T$)** | Labor que el sistema debe ejecutar| Clasificar una transacción como "Fraudulenta" o "Legítima" | Predecir el precio de venta de una propiedad |
