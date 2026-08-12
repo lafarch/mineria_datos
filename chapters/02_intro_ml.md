@@ -505,13 +505,73 @@ Las técnicas de **regularización** son herramientas fundamentales para combati
 
 #### El Problema: Overfitting en Regresión Lineal
 
-Cuando tenemos muchas variables predictoras (alta dimensionalidad) o multicolinealidad, el método de Mínimos Cuadrados Ordinarios (OLS) puede producir modelos que:
+::: {.callout-note}
+#### Pregunta para discutir
 
-- Se ajustan perfectamente a los datos de entrenamiento
-- Tienen coeficientes $\beta$ extremadamente grandes y erráticos
-- Generalizan muy mal a nuevos datos (alta varianza)
+Ajustaron un modelo de ventas con **doce meses de datos** y **diez variables** predictoras. Tres de ellas —`x1`, `x2` y `x3`— son tres formas de medir casi lo mismo: gasto en televisión reportado por la agencia, por el proveedor de medios, y por contabilidad. Su correlación entre sí es de 0.9999.
 
-La regularización resuelve esto penalizando la complejidad del modelo.
+El modelo ajusta los doce meses casi perfectamente. Estos son los coeficientes:
+
+| Variable | Coeficiente |
+|----------|------------:|
+| `x1` — gasto TV según la agencia | −15,709 |
+| `x2` — gasto TV según el proveedor | −5,260 |
+| `x3` — gasto TV según contabilidad | +22,201 |
+| `x4` — gasto en radio | +441 |
+| `x5` | −49 |
+| `x6` | −69 |
+| `x7` | −63 |
+| `x8` | +34 |
+| `x9` | +89 |
+| `x10` | −33 |
+
+Tres preguntas:
+
+1. Su jefe pregunta qué significa el coeficiente de `x1`. ¿Qué le contesta?
+2. Si el mes entrante la agencia reporta el gasto de televisión con un día de retraso y `x1` cambia en 2%, ¿qué le pasa a la predicción?
+3. Sin cambiar de algoritmo ni conseguir más datos, ¿qué le harían al problema de optimización para que dejara de comportarse así?
+:::
+
+::: {.callout-tip collapse="true"}
+#### Resolución
+
+**Pregunta 1: no significa nada interpretable, y hay una forma de demostrarlo.** Sumen los tres coeficientes de televisión:
+
+$$-15{,}709 - 5{,}260 + 22{,}201 = 1{,}232$$
+
+Esos datos se generaron con un efecto verdadero de televisión de **1,200**. El modelo encontró el efecto total con una precisión excelente, y luego lo repartió entre las tres variables en cantidades absurdas que se cancelan entre sí.
+
+Ahí está el mecanismo completo: con `x1`, `x2` y `x3` midiendo lo mismo, Mínimos Cuadrados puede sumarle veinte mil a una y restárselo a otra sin que la predicción cambie ni un peso. No tiene forma de preferir una repartición sobre otra, así que elige cualquiera. Los coeficientes individuales dejan de tener lectura de negocio aunque el modelo en conjunto prediga bien. Eso es **multicolinealidad**, y es la razón por la que "la regresión lineal es una caja blanca" tiene letras chiquitas.
+
+Si alguien reportara el coeficiente de `x1` a la dirección, estaría diciendo que **cada peso invertido en televisión destruye 15,709 pesos de ventas**. El signo mismo está mal.
+
+**Pregunta 2: la predicción se desestabiliza.** El equilibrio entre los tres coeficientes gigantes solo se sostiene mientras las tres variables se muevan juntas. En cuanto una se desfasa —un reporte con retraso, un criterio contable distinto, un 2% de diferencia— la cancelación se rompe y un coeficiente de veintidós mil amplifica ese 2% hasta convertirlo en un salto enorme en la predicción.
+
+Ese es exactamente el síntoma de **alta varianza** que vimos en la sesión 2: el modelo es frágil ante cambios diminutos en las entradas porque aprendió el ruido de estos doce meses en lugar de la señal.
+
+**Pregunta 3: castigar los coeficientes grandes.** Si alguien en el equipo propuso "no dejar que los coeficientes crezcan tanto", acaban de inventar la **regularización**. La idea es cambiar lo que el modelo intenta minimizar: en lugar de pedirle solo que se acerque a los datos, se le pide que se acerque a los datos **y** que mantenga sus coeficientes chicos. Ese segundo requisito entra a la función de costo como un término de penalización.
+
+Con esa única idea agregada, los mismos datos producen esto:
+
+| Variable | Sin penalización | Con penalización |
+|----------|-----------------:|-----------------:|
+| `x1` — gasto TV según la agencia | −15,709 | +321 |
+| `x2` — gasto TV según el proveedor | −5,260 | +320 |
+| `x3` — gasto TV según contabilidad | +22,201 | +321 |
+| `x4` — gasto en radio | +441 | +308 |
+| `x5` | −49 | −31 |
+| `x6` | −69 | +1 |
+| `x7` | −63 | +26 |
+| `x8` | +34 | +11 |
+| `x9` | +89 | −79 |
+| `x10` | −33 | +69 |
+
+Miren las tres variables de televisión: **+321, +320, +321**. En lugar de una cancelación violenta entre veintidós mil y menos quince mil, el modelo reparte el efecto en partes iguales entre las tres mediciones del mismo fenómeno, que es lo único razonable cuando no hay manera de distinguirlas. Y la suma sigue siendo ≈ 962, del mismo orden que el efecto verdadero.
+
+Eso sí es interpretable, y sobre todo es **estable**: si mañana una de las tres se desfasa, la predicción apenas se mueve.
+
+Falta decidir **cómo** se castiga, y hay dos maneras con consecuencias muy distintas. Son Ridge y Lasso.
+:::
 
 #### Regresión Ridge (L2)
 
