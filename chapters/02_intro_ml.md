@@ -118,7 +118,15 @@ Y dejamos que la computadora **descubra** las reglas por sí misma.
 
 > "Se dice que un programa de computadora aprende de la experiencia $E$ con respecto a alguna clase de tareas $T$ y medida de rendimiento $P$, si su desempeño en las tareas en $T$, medido por $P$, mejora con la experiencia $E$."
 
-Para el ingeniero de negocios, descomponer esta definición es vital para **identificar oportunidades de ML** en la empresa:
+Para el ingeniero de negocios, descomponer esta definición en sus tres componentes es vital para **identificar oportunidades de ML** en la empresa:
+
+| Componente | Definición | Ejemplo: Examen de Economía |
+|------------|------------|------------------------------|
+| **Tarea ($T$)** | Labor que el sistema debe ejecutar | Resolver los problemas del examen de economía |
+| **Experiencia ($E$)** | Los datos históricos que el sistema utiliza para entrenarse | Los exámenes anteriores con respuestas |
+| **Rendimiento ($P$)** | La métrica cuantitativa que define el éxito | La calificación obtenida en el examen |
+
+Con estos tres elementos ya pueden identificarlos en situaciones que no vienen resueltas de antemano.
 
 ::: {.callout-note}
 #### Pregunta para discutir
@@ -144,14 +152,14 @@ Una de las seis no tiene una sola respuesta correcta. ¿Cuál, y de qué depende
 ::: {.callout-tip collapse="true"}
 #### Resolución
 
-| # | Paradigma | Tipo | Por qué |
-|--:|-----------|------|---------|
-| 1 | Supervisado | Regresión | Hay respuestas históricas (el precio de cierre) y la respuesta es un número |
-| 2 | Supervisado | Clasificación | El equipo antifraude ya produjo las etiquetas: existe la columna "fue fraude / no fue fraude" |
-| 3 | No supervisado | Clusterización | No existe la columna "tipo de cliente"; hay que descubrirla |
-| 4 | Supervisado | Regresión | Hay historial de días reales y la respuesta es un número |
-| 5 | **Depende** | Clasificación, pero lo que de verdad quieres es ordenar | Ver abajo |
-| 6 | No supervisado | Detección de anomalías | No hay ni una sola falla etiquetada; no hay de qué aprender el patrón de "falla" |
+| # | Tarea ($T$) | Experiencia ($E$) | Rendimiento ($P$) | ¿Respuesta histórica? | ¿Número o categoría? |
+|--:|-------------|--------------------|--------------------|-----------------------|----------------------|
+| 1 | Predecir el precio de venta de una propiedad | 8,000 ventas con características y precio de cierre | Error entre precio predicho y precio real | Sí — el precio de cierre | Número → **Regresión** |
+| 2 | Clasificar una transacción como fraudulenta o legítima | Millones de transacciones con la etiqueta que puso el equipo antifraude | Precisión / Recall al detectar fraude | Sí — la etiqueta fraude / no fraude | Categoría → **Clasificación** |
+| 3 | Agrupar clientes en segmentos con comportamiento similar | Tres años de compras, sin ninguna etiqueta de "tipo de cliente" | Qué tan compactos y separables quedan los grupos | No — nadie ha dicho cuál es el "tipo" correcto | Categoría, pero inventada por el algoritmo → **Clusterización** |
+| 4 | Predecir en cuántos días llegará el próximo pedido | Tres años de entregas con fecha prometida y fecha real | Error entre días predichos y días reales | Sí — la fecha real de entrega | Número → **Regresión** |
+| 5 | Decidir a cuáles 500 de 50,000 clientes llamar | Resultado (aceptó / no aceptó) de campañas anteriores | Conversiones logradas con las 500 llamadas | Sí — quién aceptó en el pasado | Categoría en teoría — ver nota abajo |
+| 6 | Anticipar que una máquina va a fallar | Dos años de lecturas de sensores sin ninguna falla registrada | Qué tan bien distingue comportamiento anómalo del normal | No — no hay ni una sola falla etiquetada | No aplica → **Detección de anomalías** |
 
 **Una nota al margen sobre el caso 2.** Su respuesta es inequívoca porque alguien ya hizo un trabajo: el equipo antifraude revisó transacción por transacción y marcó las fraudulentas. Vale la pena imaginar el mismo banco sin ese trabajo hecho. El problema de negocio sería idéntico —detectar fraude— pero no habría nada que aprender del mapeo transacción → fraude, y lo único posible sería detección de anomalías no supervisada: el sistema no sabría qué es un ataque, pero sí que *este* comportamiento es rarísimo comparado con el tráfico normal. Mismo problema de negocio, dos problemas de Machine Learning distintos, y lo que decide cuál es que alguien haya etiquetado o no.
 
@@ -159,12 +167,6 @@ Una de las seis no tiene una sola respuesta correcta. ¿Cuál, y de qué depende
 
 **La conclusión de fondo.** El paradigma no lo determina el problema de negocio, lo determina la **Experiencia disponible** ($E$). Antes de preguntar "¿qué algoritmo uso?", la pregunta es "¿qué respuestas correctas tengo, y quién las produjo?".
 :::
-
-| Componente | Definición | Ejemplo: Detección de Fraude | Ejemplo: Valoración Inmobiliaria |
-|------------|------------|------------------------------|----------------------------------|
-| **Tarea ($T$)** | Labor que el sistema debe ejecutar| Clasificar una transacción como "Fraudulenta" o "Legítima" | Predecir el precio de venta de una propiedad |
-| **Experiencia ($E$)** | Los datos históricos que el sistema utiliza para entrenarse | Millones de transacciones pasadas con sus etiquetas reales | Historial de ventas de casas con características y ubicación |
-| **Rendimiento ($P$)** | La métrica cuantitativa que define el éxito | Precisión, Recall, o Costo Financiero del Fraude | Error Cuadrático Medio (diferencia precio predicho vs. real) |
 
 #### Implicación Estratégica
 
@@ -222,6 +224,43 @@ $$y \approx \hat{f}(x)$$
 Este proceso es análogo a la **Ingeniería Inversa**: observamos las entradas y salidas de la "caja negra" de la realidad y tratamos de construir una "caja blanca" matemática que produzca las mismas salidas ante las mismas entradas.
 
 ### Generalización vs. Memorización
+
+::: {.callout-note}
+#### Pregunta para discutir
+
+Tienen doce meses de datos de una campaña: cuánto se gastó en marketing y cuántos ingresos entraron. Tres analistas proponen tres modelos distintos.
+
+![Tres curvas candidatas](imgs/curvas_candidatas.png)
+
+**Voten a mano alzada:** ¿cuál de las tres predecirá mejor los ingresos del **próximo** mes, uno que todavía no está en la gráfica? A, B o C.
+
+Ahora discutan dos minutos con la persona de al lado. Quien cambió de opinión, explique por qué. **Voten otra vez.**
+
+Dos observaciones antes de ver la respuesta. La curva C no se equivoca en ni un solo punto de los doce: ¿por qué alguien votaría por otra? Y la recta A se equivoca en casi todos: ¿por qué alguien votaría por ella?
+:::
+
+::: {.callout-tip collapse="true"}
+#### Resolución
+
+Estos son los seis meses siguientes, que ninguno de los tres modelos vio al ajustarse:
+
+![Tres curvas candidatas con datos nuevos](imgs/curvas_candidatas_revelado.png)
+
+| Modelo | Error cuadrático medio en datos nuevos |
+|--------|---------------------------------------:|
+| A — Recta | 6.10 |
+| B — Curva suave | **0.29** |
+| C — Pasa por los 12 puntos | 2.01 |
+
+**Gana la de en medio, y las dos extremas pierden por goliza.** Ese es el resultado importante, y conviene ver que **pierden por razones opuestas**:
+
+- La recta **A** ni siquiera podía capturar la forma de los datos. Se equivoca en el histórico y se equivoca en los datos nuevos, por la misma razón las dos veces: es demasiado simple para el fenómeno. Su error no viene de los datos, viene de la decisión de usar una recta.
+- La curva **C** capturaba el histórico a la perfección —error cero en los doce puntos— y aun así falla siete veces más que B en datos nuevos. Su problema es el contrario: es tan flexible que se dedicó a seguir el zigzag accidental de estos doce meses en particular. En el tramo final llega a predecir ingresos negativos, algo que ningún dato sugería.
+
+Fíjense en lo que esto significa para su intuición: **el error en los datos que ya tienen no les dice cuál modelo es mejor.** C ganaba 12 a 0 en el histórico y perdió en lo único que importa.
+
+Las dos formas de perder tienen nombre, y la tensión entre ellas es el compromiso que gobierna todos los modelos de este curso.
+:::
 
 La distinción clave es que no queremos simplemente **"memorizar"** los puntos de datos pasados. Queremos aprender la **estructura subyacente** de $f(x)$ para poder predecir $y$ para nuevos valores de $x$ que nunca hemos visto antes.
 
@@ -327,42 +366,6 @@ El error total de cualquier modelo predictivo se puede descomponer en tres parte
 
 $$\text{Error Total} = \text{Sesgo}^2 + \text{Varianza} + \text{Error Irreducible } (\epsilon)$$
 
-::: {.callout-note}
-#### Pregunta para discutir
-
-Tienen doce meses de datos de una campaña: cuánto se gastó en marketing y cuántos ingresos entraron. Tres analistas proponen tres modelos distintos.
-
-![Tres curvas candidatas](imgs/curvas_candidatas.png)
-
-**Voten a mano alzada:** ¿cuál de las tres predecirá mejor los ingresos del **próximo** mes, uno que todavía no está en la gráfica? A, B o C.
-
-Ahora discutan dos minutos con la persona de al lado. Quien cambió de opinión, explique por qué. **Voten otra vez.**
-
-Dos observaciones antes de ver la respuesta. La curva C no se equivoca en ni un solo punto de los doce: ¿por qué alguien votaría por otra? Y la recta A se equivoca en casi todos: ¿por qué alguien votaría por ella?
-:::
-
-::: {.callout-tip collapse="true"}
-#### Resolución
-
-Estos son los seis meses siguientes, que ninguno de los tres modelos vio al ajustarse:
-
-![Tres curvas candidatas con datos nuevos](imgs/curvas_candidatas_revelado.png)
-
-| Modelo | Error cuadrático medio en datos nuevos |
-|--------|---------------------------------------:|
-| A — Recta | 6.10 |
-| B — Curva suave | **0.29** |
-| C — Pasa por los 12 puntos | 2.01 |
-
-**Gana la de en medio, y las dos extremas pierden por goliza.** Ese es el resultado importante, y conviene ver que **pierden por razones opuestas**:
-
-- La recta **A** ni siquiera podía capturar la forma de los datos. Se equivoca en el histórico y se equivoca en los datos nuevos, por la misma razón las dos veces: es demasiado simple para el fenómeno. Su error no viene de los datos, viene de la decisión de usar una recta.
-- La curva **C** capturaba el histórico a la perfección —error cero en los doce puntos— y aun así falla siete veces más que B en datos nuevos. Su problema es el contrario: es tan flexible que se dedicó a seguir el zigzag accidental de estos doce meses en particular. En el tramo final llega a predecir ingresos negativos, algo que ningún dato sugería.
-
-Fíjense en lo que esto significa para su intuición: **el error en los datos que ya tienen no les dice cuál modelo es mejor.** C ganaba 12 a 0 en el histórico y perdió en lo único que importa.
-
-Las dos formas de perder tienen nombre, y la tensión entre ellas es el compromiso que gobierna todos los modelos de este curso.
-:::
 
 ### El Sesgo (Bias): El Error de la Simplificación
 
