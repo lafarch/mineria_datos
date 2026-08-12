@@ -48,6 +48,63 @@ ENTONCES aprobar_crédito
 SINO rechazar_crédito
 ```
 
+::: {.callout-note}
+#### Pregunta para discutir
+
+Un banco te entrega su historial de ocho créditos ya cerrados. En equipos de tres, escriban la regla de aprobación que usarían de aquí en adelante.
+
+| # | Ingreso anual | Antigüedad laboral | Deuda / Ingreso | Pagos tarde (2 años) | ¿Pagó el crédito? |
+|--:|--------------:|-------------------:|----------------:|---------------------:|-------------------|
+| 1 | $85,000 | 8 años | 0.15 | 0 | Sí |
+| 2 | $62,000 | 4 años | 0.20 | 0 | Sí |
+| 3 | $54,000 | 3 años | 0.25 | 1 | Sí |
+| 4 | $95,000 | 6 años | 0.30 | 0 | Sí |
+| 5 | $38,000 | 1 año  | 0.55 | 3 | No |
+| 6 | $45,000 | 2 años | 0.60 | 4 | No |
+| 7 | $30,000 | 1 año  | 0.45 | 2 | No |
+| 8 | $48,000 | 5 años | 0.70 | 5 | No |
+
+Su regla debe clasificar correctamente los ocho casos. Escríbanla en el pizarrón.
+
+**Segunda parte.** Llegan cuatro solicitantes nuevos. Apliquen su regla y anoten qué decidiría. La última columna dice lo que realmente pasó.
+
+| # | Ingreso anual | Antigüedad laboral | Deuda / Ingreso | Pagos tarde (2 años) | ¿Pagó el crédito? |
+|--:|--------------:|-------------------:|----------------:|---------------------:|-------------------|
+| 9 | $49,000 | 12 años | 0.10 | 0 | Sí |
+| 10 | $120,000 | 9 años | 0.75 | 3 | No |
+| 11 | $70,000 | 1 año | 0.18 | 3 | Sí |
+| 12 | $58,000 | 6 años | 0.30 | 0 | **No** |
+
+¿Cuántos de los cuatro acertó su regla? ¿Qué le agregarían para arreglarlo?
+:::
+
+::: {.callout-tip collapse="true"}
+#### Resolución
+
+Al menos tres reglas distintas clasifican perfectamente los ocho casos de entrenamiento:
+
+- **Regla A:** aprobar si ingreso > $50,000 **y** antigüedad > 2 años.
+- **Regla B:** aprobar si Deuda / Ingreso < 0.35.
+- **Regla C:** aprobar si pagos tarde ≤ 1.
+
+Las tres aciertan 8 de 8. Ya ahí hay un problema: **los datos no alcanzan para decidir cuál regla es la correcta.** Distintos equipos escribieron reglas distintas, todas perfectas en el historial, y no hay forma de elegir entre ellas mirando solo esas ocho filas.
+
+Con los cuatro casos nuevos se separan:
+
+| Caso | Regla A | Regla B | Regla C | Realidad |
+|------|---------|---------|---------|----------|
+| 9 — gana $49,000 pero 12 años de antigüedad y casi sin deuda | Rechaza ✗ | Aprueba ✓ | Aprueba ✓ | Pagó |
+| 10 — gana $120,000 pero sobreendeudado | Aprueba ✗ | Rechaza ✓ | Rechaza ✓ | No pagó |
+| 11 — recién contratado, buen ingreso, atrasos viejos | Rechaza ✗ | Aprueba ✓ | Rechaza ✗ | Pagó |
+| 12 — se ve bien en todo | Aprueba ✗ | Aprueba ✗ | Aprueba ✗ | **No pagó** |
+
+Tres conclusiones, en orden de profundidad:
+
+1. **Las reglas se multiplican.** Cada excepción exige una cláusula nueva, y cada cláusula nueva abre excepciones propias. Con cinco variables ya es incómodo; con las cientos que hoy tiene un banco (comportamiento web, geolocalización, historial transaccional) es imposible.
+2. **Los datos no determinan la regla.** Tres reglas incompatibles explicaban igual de bien el pasado. Elegir entre hipótesis que compiten es justamente el problema que resolverá el Machine Learning, y para resolverlo hará falta evaluar en datos que el modelo no vio.
+3. **El caso 12 no lo arregla ninguna regla.** Se veía bien en las cinco variables y no pagó, porque perdió el empleo tres meses después de firmar. Esa información **no está en ninguna columna** y no hay regla, ni modelo, que pueda recuperarla. Guarden esta idea: reaparece en unas páginas como el término $\epsilon$.
+:::
+
 Este enfoque, aunque transparente, es **extremadamente frágil**:
 
 - ¿Qué sucede con un solicitante que gana $49,000 pero tiene 10 años de antigüedad y cero deudas?
