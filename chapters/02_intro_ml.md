@@ -1,18 +1,5 @@
 # Fundamentos de Machine Learning
 
-## Objetivos de Aprendizaje
-
-Al finalizar este capítulo, serás capaz de:
-
-- Comprender la transición de sistemas basados en reglas a modelos de aprendizaje inductivo
-- Aplicar la definición formal de Machine Learning a problemas de negocios
-- Identificar problemas de aprendizaje supervisado y no supervisado
-- Reconocer y gestionar el trade-off sesgo-varianza en modelos predictivos
-- Comprender los fundamentos matemáticos de Regresión Lineal, Regresión Logística y K-Means
-- Traducir métricas técnicas en valor de negocio medible
-
----
-
 ## Introducción: El Cambio de Paradigma en la Toma de Decisiones
 
 En el capítulo anterior exploramos cómo la Minería de Datos, el Machine Learning y la Inteligencia Artificial se relacionan dentro del ecosistema de datos. Establecimos que **el Machine Learning es el motor técnico** que permite extraer valor de los datos.
