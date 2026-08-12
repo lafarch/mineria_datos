@@ -223,3 +223,9 @@ __marimo__/
 
 scripts/*
 */catboost_info/*
+
+# Documentos de diseño de trabajo (no forman parte del libro)
+specs/
+
+# Scratch de orquestación de agentes
+.superpowers/
