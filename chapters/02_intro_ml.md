@@ -146,7 +146,7 @@ Aquí hay seis situaciones reales. Para cada una, en equipo, decidan tres cosas 
 | 5 | Un call center tiene presupuesto para llamar a **500 de sus 50,000 clientes** y ofrecerles un producto. Tiene el registro de quién aceptó y quién no en campañas anteriores. |
 | 6 | Una planta quiere **anticipar la falla de una máquina**. Tiene dos años de lecturas de sensores, pero la máquina nunca ha fallado en ese periodo. |
 
-Dos de las seis no tienen una sola respuesta correcta. ¿Cuáles, y de qué depende?
+Una de las seis no tiene una sola respuesta correcta. ¿Cuál, y de qué depende?
 :::
 
 ::: {.callout-tip collapse="true"}
@@ -155,13 +155,13 @@ Dos de las seis no tienen una sola respuesta correcta. ¿Cuáles, y de qué depe
 | # | Paradigma | Tipo | Por qué |
 |--:|-----------|------|---------|
 | 1 | Supervisado | Regresión | Hay respuestas históricas (el precio de cierre) y la respuesta es un número |
-| 2 | **Depende** | Clasificación o detección de anomalías | Ver abajo |
+| 2 | Supervisado | Clasificación | El equipo antifraude ya produjo las etiquetas: existe la columna "fue fraude / no fue fraude" |
 | 3 | No supervisado | Clusterización | No existe la columna "tipo de cliente"; hay que descubrirla |
 | 4 | Supervisado | Regresión | Hay historial de días reales y la respuesta es un número |
 | 5 | **Depende** | Clasificación, pero lo que de verdad quieres es ordenar | Ver abajo |
 | 6 | No supervisado | Detección de anomalías | No hay ni una sola falla etiquetada; no hay de qué aprender el patrón de "falla" |
 
-**El caso 2 depende de si existen las etiquetas.** Con el trabajo del equipo antifraude, es aprendizaje supervisado de clasificación: aprendes el mapeo de transacción a fraude/legítimo. Sin ese trabajo, lo único que puedes hacer es detección de anomalías no supervisada: el sistema no sabe qué es un ataque, pero puede detectar que *este* comportamiento es raro comparado con el tráfico normal. Es el mismo problema de negocio y dos problemas de Machine Learning completamente distintos.
+**Una nota al margen sobre el caso 2.** Su respuesta es inequívoca porque alguien ya hizo un trabajo: el equipo antifraude revisó transacción por transacción y marcó las fraudulentas. Vale la pena imaginar el mismo banco sin ese trabajo hecho. El problema de negocio sería idéntico —detectar fraude— pero no habría nada que aprender del mapeo transacción → fraude, y lo único posible sería detección de anomalías no supervisada: el sistema no sabría qué es un ataque, pero sí que *este* comportamiento es rarísimo comparado con el tráfico normal. Mismo problema de negocio, dos problemas de Machine Learning distintos, y lo que decide cuál es que alguien haya etiquetado o no.
 
 **El caso 5 revela algo más fino.** Formalmente es clasificación binaria: ¿acepta o no acepta? Pero fíjense en la restricción real: solo puedes llamar a 500 de 50,000. No necesitas saber *quién aceptará*; necesitas **ordenar** a los 50,000 y llamar a los primeros 500. Eso no lo resuelve una etiqueta, lo resuelve una probabilidad bien construida. Volveremos a este punto en la sesión 3.
 
