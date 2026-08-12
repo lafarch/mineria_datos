@@ -16,7 +16,21 @@ La respuesta está en comprender tres elementos fundamentales:
 2. **¿Qué tipos de problemas puede resolver?** (Paradigmas de aprendizaje)
 3. **¿Cómo evaluamos si un modelo es útil?** (Sesgo vs. Varianza)
 
+### Mapa de las Tres Sesiones
+
+Este capítulo se cubre en tres sesiones. Cada una abre con un problema concreto que resolverás en equipo antes de que el texto te dé la respuesta.
+
+| Sesión | Pregunta que responde | Contenido |
+|--------|----------------------|-----------|
+| **1** | ¿Qué es aprender? | De la programación explícita al aprendizaje inductivo, la definición formal ($T$, $E$, $P$), la aproximación de funciones, generalización vs. memorización, y los paradigmas supervisado y no supervisado |
+| **2** | ¿Por qué falla un modelo? | Sesgo vs. varianza, regresión lineal, mínimos cuadrados, interpretación de coeficientes, y regularización Ridge y Lasso |
+| **3** | ¿Cómo decidir bajo incertidumbre? | Regresión logística, probabilidad vs. etiqueta, el umbral de decisión, los dos ejes de evaluación, y clusterización con K-Means |
+
+A lo largo del capítulo encontrarás bloques titulados **Pregunta para discutir**. No los saltes: la sección que sigue a cada uno es la respuesta, y la respuesta se entiende mucho mejor después de haber intentado resolverla.
+
 ---
+
+**Sesión 1 — ¿Qué es aprender?**
 
 ## De la Programación Explícita al Aprendizaje Inductivo
 
@@ -211,6 +225,8 @@ Descubrir información oculta ("insights") sobre la estructura de los datos que 
 | **Fase CRISP-DM típica** | Modelado con objetivo claro | Entendimiento de Datos / Exploración |
 
 ---
+
+**Sesión 2 — ¿Por qué falla un modelo?**
 
 ## El Dilema Estratégico: Sesgo vs. Varianza
 
@@ -438,6 +454,8 @@ El valor óptimo de $\lambda$ se determina mediante **Validación Cruzada** (la 
 2. Para cada valor, evaluamos el error en datos de validación
 3. Seleccionamos el $\lambda$ que minimiza el error de generalización
 ---
+
+**Sesión 3 — ¿Cómo decidir bajo incertidumbre?**
 
 ## Regresión Logística: Clasificación y Probabilidad
 
