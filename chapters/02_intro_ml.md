@@ -16,21 +16,9 @@ La respuesta está en comprender tres elementos fundamentales:
 2. **¿Qué tipos de problemas puede resolver?** (Paradigmas de aprendizaje)
 3. **¿Cómo evaluamos si un modelo es útil?** (Sesgo vs. Varianza)
 
-### Mapa de las Tres Sesiones
-
-Este capítulo se cubre en tres sesiones. Cada una abre con un problema concreto que resolverás en equipo antes de que el texto te dé la respuesta.
-
-| Sesión | Pregunta que responde | Contenido |
-|--------|----------------------|-----------|
-| **1** | ¿Qué es aprender? | De la programación explícita al aprendizaje inductivo, la definición formal ($T$, $E$, $P$), la aproximación de funciones, generalización vs. memorización, y los paradigmas supervisado y no supervisado |
-| **2** | ¿Por qué falla un modelo? | Sesgo vs. varianza, regresión lineal, mínimos cuadrados, interpretación de coeficientes, y regularización Ridge y Lasso |
-| **3** | ¿Cómo decidir bajo incertidumbre? | Regresión logística, probabilidad vs. etiqueta, el umbral de decisión, los dos ejes de evaluación, y clusterización con K-Means |
-
 A lo largo del capítulo encontrarás bloques titulados **Pregunta para discutir**. No los saltes: la sección que sigue a cada uno es la respuesta, y la respuesta se entiende mucho mejor después de haber intentado resolverla.
 
 ---
-
-**Sesión 1 — ¿Qué es aprender?**
 
 ## De la Programación Explícita al Aprendizaje Inductivo
 
@@ -65,8 +53,12 @@ Un banco te entrega su historial de ocho créditos ya cerrados. En equipos de tr
 | 8 | $48,000 | 5 años | 0.70 | 5 | No |
 
 Su regla debe clasificar correctamente los ocho casos. Escríbanla en el pizarrón.
+:::
 
-**Segunda parte.** Llegan cuatro solicitantes nuevos. Apliquen su regla y anoten qué decidiría. La última columna dice lo que realmente pasó.
+::: {.callout-note collapse="true"}
+#### Segunda parte
+
+Llegan cuatro solicitantes nuevos. Apliquen su regla y anoten qué decidiría. La última columna dice lo que realmente pasó.
 
 | # | Ingreso anual | Antigüedad laboral | Deuda / Ingreso | Pagos tarde (2 años) | ¿Pagó el crédito? |
 |--:|--------------:|-------------------:|----------------:|---------------------:|-------------------|
@@ -163,7 +155,7 @@ Una de las seis no tiene una sola respuesta correcta. ¿Cuál, y de qué depende
 
 **Una nota al margen sobre el caso 2.** Su respuesta es inequívoca porque alguien ya hizo un trabajo: el equipo antifraude revisó transacción por transacción y marcó las fraudulentas. Vale la pena imaginar el mismo banco sin ese trabajo hecho. El problema de negocio sería idéntico —detectar fraude— pero no habría nada que aprender del mapeo transacción → fraude, y lo único posible sería detección de anomalías no supervisada: el sistema no sabría qué es un ataque, pero sí que *este* comportamiento es rarísimo comparado con el tráfico normal. Mismo problema de negocio, dos problemas de Machine Learning distintos, y lo que decide cuál es que alguien haya etiquetado o no.
 
-**El caso 5 revela algo más fino.** Formalmente es clasificación binaria: ¿acepta o no acepta? Pero fíjense en la restricción real: solo puedes llamar a 500 de 50,000. No necesitas saber *quién aceptará*; necesitas **ordenar** a los 50,000 y llamar a los primeros 500. Eso no lo resuelve una etiqueta, lo resuelve una probabilidad bien construida. Volveremos a este punto en la sesión 3.
+**El caso 5 revela algo más fino.** Formalmente es clasificación binaria: ¿acepta o no acepta? Pero fíjense en la restricción real: solo puedes llamar a 500 de 50,000. No necesitas saber *quién aceptará*; necesitas **ordenar** a los 50,000 y llamar a los primeros 500. Eso no lo resuelve una etiqueta, lo resuelve una probabilidad bien construida. Volveremos a este punto más adelante, con la regresión logística.
 
 **La conclusión de fondo.** El paradigma no lo determina el problema de negocio, lo determina la **Experiencia disponible** ($E$). Antes de preguntar "¿qué algoritmo uso?", la pregunta es "¿qué respuestas correctas tengo, y quién las produjo?".
 :::
@@ -322,8 +314,6 @@ Descubrir información oculta ("insights") sobre la estructura de los datos que 
 | **Fase CRISP-DM típica** | Modelado con objetivo claro | Entendimiento de Datos / Exploración |
 
 ---
-
-**Sesión 2 — ¿Por qué falla un modelo?**
 
 ## El Dilema Estratégico: Sesgo vs. Varianza
 
@@ -547,7 +537,7 @@ Si alguien reportara el coeficiente de `x1` a la dirección, estaría diciendo q
 
 **Pregunta 2: la predicción se desestabiliza.** El equilibrio entre los tres coeficientes gigantes solo se sostiene mientras las tres variables se muevan juntas. En cuanto una se desfasa —un reporte con retraso, un criterio contable distinto, un 2% de diferencia— la cancelación se rompe y un coeficiente de veintidós mil amplifica ese 2% hasta convertirlo en un salto enorme en la predicción.
 
-Ese es exactamente el síntoma de **alta varianza** que vimos en la sesión 2: el modelo es frágil ante cambios diminutos en las entradas porque aprendió el ruido de estos doce meses en lugar de la señal.
+Ese es exactamente el síntoma de **alta varianza** que vimos antes: el modelo es frágil ante cambios diminutos en las entradas porque aprendió el ruido de estos doce meses en lugar de la señal.
 
 **Pregunta 3: castigar los coeficientes grandes.** Si alguien en el equipo propuso "no dejar que los coeficientes crezcan tanto", acaban de inventar la **regularización**. La idea es cambiar lo que el modelo intenta minimizar: en lugar de pedirle solo que se acerque a los datos, se le pide que se acerque a los datos **y** que mantenga sus coeficientes chicos. Ese segundo requisito entra a la función de costo como un término de penalización.
 
@@ -647,9 +637,8 @@ El valor óptimo de $\lambda$ se determina mediante **Validación Cruzada** (la 
 1. Probamos múltiples valores de $\lambda$ (e.g., 0.001, 0.01, 0.1, 1, 10, 100)
 2. Para cada valor, evaluamos el error en datos de validación
 3. Seleccionamos el $\lambda$ que minimiza el error de generalización
----
 
-**Sesión 3 — ¿Cómo decidir bajo incertidumbre?**
+---
 
 ## Regresión Logística: Clasificación y Probabilidad
 
