@@ -614,7 +614,6 @@ Es el mismo cuidado que exigirá K-Means más adelante en el capítulo, y por un
 Este problema es exclusivo del método iterativo. Mínimos Cuadrados resuelto en forma exacta da el mismo resultado con o sin estandarizar, porque no "camina" hacia ningún lado. Si su modelo entrena con descenso en gradiente —redes neuronales, `SGDRegressor`, regresión logística en muchas implementaciones— estandarizar no es opcional.
 :::
 
-
 ::: {.callout-note}
 #### Un detalle que solo es fácil aquí
 
@@ -623,11 +622,78 @@ La curva de error de la regresión lineal es un tazón: tiene **un solo mínimo*
 Las redes neuronales no son convexas: su superficie de error tiene valles múltiples, y dónde se termine depende de dónde se arrancó. Esa es la razón por la que entrenar una red dos veces con los mismos datos puede dar dos modelos distintos, y por la que la inicialización de los pesos es un tema de investigación. En regresión lineal, ese problema simplemente no existe.
 :::
 
+#### Volver a la definición: aprender **es** optimizar
+
+Al principio del capítulo definimos el aprendizaje de máquina con una frase que sonaba bien pero no decía cómo: *"su desempeño en la tarea $T$, medido por $P$, mejora con la experiencia $E$"*. Esa frase acaba de convertirse en un algoritmo:
+
+| En la definición | En el descenso en gradiente |
+|------------------|------------------------------|
+| **Tarea ($T$)** | La forma del modelo: $\hat{y} = \beta_0 + \beta_1x_1 + \dots$ |
+| **Experiencia ($E$)** | Los datos que entran en el gradiente: cada residuo multiplicado por cada variable |
+| **Rendimiento ($P$)** | La función de costo $J(\beta)$ |
+| **"mejora con $E$"** | $\beta_j \leftarrow \beta_j - \alpha \frac{\partial J}{\partial \beta_j}$, repetido hasta que la pendiente se aplana |
+
+Para una máquina, **aprender es mover parámetros para bajar un número**. No hay nada más. Y eso significa que armar un modelo de Machine Learning es siempre elegir tres piezas:
+
+1. Una **familia de funciones** (¿entre qué candidatos buscamos?)
+2. Una **función de costo** (¿qué significa "equivocarse"?)
+3. Un **optimizador** (¿cómo recorremos la familia buscando el mínimo?)
+
+Ese esqueleto no cambia en el resto del curso. Lo único que cambia es qué se pone en cada casilla:
+
+| Modelo | Familia de funciones | Función de costo | Optimizador |
+|--------|----------------------|------------------|-------------|
+| **Regresión lineal** | Combinaciones lineales de las variables | Error cuadrático | Fórmula cerrada o descenso en gradiente |
+| **Ridge / Lasso** | Las mismas combinaciones lineales | Error cuadrático **+ penalización** | Descenso en gradiente |
+| **Regresión logística** | Sigmoide de una combinación lineal | Entropía cruzada (log-verosimilitud) | Descenso en gradiente |
+| **Boosting** (cap. 7) | Sumas de árboles | La que se elija | Descenso en gradiente, un árbol por paso |
+| **Redes neuronales** (cap. 8) | Composiciones de capas | La que se elija | Descenso en gradiente + retropropagación |
+
+Cuando en el capítulo 8 aparezca la frase "entrenar una red neuronal", no habrá nada conceptualmente nuevo: la familia de funciones será enorme y el costo será otro, pero el ciclo será este mismo, el de la fórmula de una línea que acabamos de escribir.
+
+Vale la pena notar dónde queda la **elección humana** en este esquema. El optimizador elige los coeficientes; nadie más. Pero la familia de funciones y la función de costo las elige una persona, y esas dos decisiones son las que determinan si el modelo sirve al negocio. El algoritmo minimiza con obediencia perfecta **lo que le hayamos pedido minimizar**.
+
+#### Optimizar no es aprender
+
+Y ahí está la trampa, que es la razón de fondo por la que vale la pena hacer esta conexión explícita.
+
+El descenso en gradiente minimiza el error **sobre los datos que ya tenemos**. Lo que al negocio le importa es el error sobre datos que todavía no existen. Esos son dos números distintos, y el algoritmo solo puede ver el primero.
+
+Ya vimos qué pasa cuando se confunden. En la votación de las tres curvas, la curva **C** pasaba exactamente por los doce puntos: error de entrenamiento cero, el mejor resultado de optimización posible, imposible de superar. Y perdió. **Un optimizador perfecto habría entregado la curva C.**
+
+Lo mismo se puede ver ahora en el lenguaje de esta sección, con un solo modelo al que dejamos correr:
+
+![Error de entrenamiento vs. error en datos nuevos](imgs/optimizar_no_es_aprender.png)
+
+| Iteración | Error de entrenamiento | Error en datos nuevos |
+|----------:|-----------------------:|----------------------:|
+| 1 | 5.34 | 5.25 |
+| 10 | 1.05 | 1.51 |
+| **39** | 0.80 | **1.24** |
+| 1,000 | 0.35 | 2.13 |
+| 20,000 | **0.22** | 5.34 |
+
+De la iteración 39 a la 20,000 el error de entrenamiento mejoró **3.6 veces** y el error en datos nuevos empeoró **4.3 veces**. El optimizador hizo su trabajo de manera impecable: el número que le pedimos bajar, bajó, en todas y cada una de las 20,000 iteraciones. El modelo, mientras tanto, **fue aprendiendo cada vez menos**.
+
+La razón es la que ya conocen con otro nombre. Al principio el descenso se lleva lo que es fácil de explicar porque se repite en todas las filas: la señal. Cuando ya no queda señal por explicar, lo único que sobra en el error son los accidentes de estas 40 filas en particular, y el algoritmo —que no distingue una cosa de la otra— se dedica a explicar eso. Sesgo primero, varianza después.
+
+**De ahí salen las tres técnicas** que la sección de sesgo-varianza mencionó sin poder explicar todavía. Las tres son formas de **impedir deliberadamente que el optimizador llegue hasta el fondo**:
+
+| Técnica | Qué hace, literalmente |
+|---------|------------------------|
+| **Early stopping** | Detener el ciclo antes del mínimo. En la gráfica: parar en la iteración 39 aunque falten 19,961 iteraciones de mejora disponible |
+| **Regularización** | Cambiar la función de costo para que su mínimo esté en otro lugar, uno con coeficientes más chicos |
+| **Validación cruzada** | No frena nada: es la **única forma de saber dónde frenar**, porque la curva naranja de la gráfica solo se puede dibujar con datos que el optimizador no vio |
+
+Fíjense en lo que tienen en común los tres números que hacen falta para aplicarlas: la tasa de aprendizaje $\alpha$, la intensidad de la penalización $\lambda$, y en qué iteración detenerse. **Ninguno de los tres se puede elegir minimizando el error de entrenamiento.** Si se pudiera, el propio descenso los elegiría, y su respuesta sería siempre la misma: $\lambda = 0$, nunca detenerse. Por eso se llaman **hiperparámetros** y por eso se eligen *afuera* del ciclo, con datos que el ciclo nunca tocó. Ese es exactamente el tema del capítulo 4.
+
+::: {.callout-important}
+El optimizador es un empleado obediente y literal: entrega con precisión el mínimo de lo que se le pidió minimizar. Todo el oficio consiste en **pedirle lo correcto**, y en saber cuándo dejar de pedirle más.
+:::
+
 #### Lo que abre esta sección
 
-Ahora que el entrenamiento es un proceso de pasos y no una fórmula, algo se vuelve posible: **modificar lo que el modelo persigue en cada paso**.
-
-Si al error le sumamos un término que también castigue el tamaño de los coeficientes, el gradiente cambia y la regla de actualización se convierte en "acércate a los datos, pero encoge un poco cada coeficiente antes de moverlo". Esa idea de una línea es la que, unas páginas más adelante, tendrá nombre propio: **regularización**.
+De las tres técnicas, la segunda es la que ocupará el resto de esta parte del capítulo. "Cambiar la función de costo" suena abstracto hasta que se ve en la regla de actualización: si al error le sumamos un término que castigue el tamaño de los coeficientes, cada paso se convierte en *"acércate a los datos, pero encoge un poco cada coeficiente antes de moverlo"*. Esa idea de una sola línea es la que, unas páginas más adelante, tendrá nombre propio: **regularización**.
 
 ### Interpretación de Negocios: Caja Blanca
 
@@ -767,7 +833,7 @@ $$\beta_j \leftarrow \underbrace{\beta_j(1 - 2\alpha\lambda)}_{\text{encoger}} +
 
 Es literalmente el mismo algoritmo de la sección anterior con un paso añadido: **antes de moverse hacia los datos, cada coeficiente se encoge un porcentaje fijo**. Un coeficiente solo consigue quedarse grande si los datos lo empujan hacia arriba en cada iteración con suficiente fuerza como para compensar ese encogimiento constante. En redes neuronales a esta misma operación se le llama *weight decay*, y es exactamente la misma fórmula.
 
-Vale la pena notar que también arregla el problema de la fórmula exacta: la solución cerrada de Ridge es $\hat{\beta} = (X^T X + \lambda I)^{-1}X^T y$, y ese $\lambda I$ sumado a la diagonal vuelve invertible una matriz que sin él era casi singular. Es la traducción algebraica de la misma idea.
+Vale la pena notar que la penalización también estabiliza la solución algebraica: la fórmula cerrada de Ridge es $\hat{\beta} = (X^T X + \lambda I)^{-1}X^T y$, y ese $\lambda I$ sumado a la diagonal vuelve invertible una matriz que sin él era casi singular. Es la traducción algebraica de la misma idea.
 
 **Utilidad de Ridge:**
 
