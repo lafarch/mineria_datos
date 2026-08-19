@@ -452,6 +452,183 @@ $$\text{Minimizar: } \sum_{i=1}^{n} (y_{\text{real}}^{(i)} - y_{\text{predicho}}
 
 La línea que produce la suma más baja posible es la solución óptima.
 
+### Descenso en Gradiente: Cómo Encuentra la Máquina ese Mínimo
+
+Mínimos Cuadrados nos dice **qué** minimizar. No nos dice **cómo** hacerlo. Esa segunda pregunta parece un detalle técnico y no lo es: es el motor que mueve a casi todos los modelos que veremos en el resto del curso.
+
+::: {.callout-note}
+#### Pregunta para discutir
+
+Una empresa quiere un modelo mínimo: los ingresos son proporcionales al gasto en marketing, sin nada más.
+
+$$\text{Ingresos} = \beta \times \text{Gasto en marketing}$$
+
+Un solo número desconocido, $\beta$. Estos son cuatro meses de datos (en millones de pesos):
+
+| Mes | Gasto en marketing | Ingresos |
+|----:|-------------------:|---------:|
+| 1 | 2.0 | 7.1 |
+| 2 | 4.0 | 12.4 |
+| 3 | 6.0 | 19.8 |
+| 4 | 8.0 | 25.1 |
+
+Un becario probó cinco valores de $\beta$ y calculó, para cada uno, el error cuadrático medio sobre los cuatro meses:
+
+| $\beta$ propuesto | Error |
+|------------------:|------:|
+| 1.0 | 144.9 |
+| 2.0 | 43.2 |
+| 3.0 | 1.5 |
+| 4.0 | 19.8 |
+| 5.0 | 98.1 |
+
+Tres preguntas, en equipos:
+
+1. ¿Cuál es el mejor $\beta$ de la tabla? Ahora encuéntrenlo **con dos decimales**. ¿Cuántas evaluaciones más le piden al becario?
+2. El modelo de verdad de esa empresa no tiene 1 coeficiente: tiene **300**. Y cada evaluación del error tarda 20 minutos. Con su método del punto anterior, ¿cuántas evaluaciones hacen falta? ¿Cuánto tiempo es eso?
+3. Vuelvan a mirar la tabla de cinco renglones. Cada evaluación les entregó **un número**: la altura del error. ¿Qué otra información estaba disponible en esos mismos cálculos y no usaron?
+:::
+
+::: {.callout-tip collapse="true"}
+#### Resolución
+
+**Pregunta 1: el mejor de la tabla es $\beta = 3$, y no es el óptimo.** El verdadero mínimo está en $\beta = 3.195$, con un error de 0.31 en lugar de 1.5. Para encontrarlo por prueba y error con dos decimales, barriendo el rango de 0 a 10 de centésima en centésima, hacen falta **1,000 evaluaciones**. Con cuatro filas de datos eso es instantáneo, así que hasta aquí el método parece razonable.
+
+**Pregunta 2: aquí se acaba el método.** Con 300 coeficientes hay que probar combinaciones, no valores sueltos. Aun siendo generosos y probando solo **diez** valores por coeficiente, las combinaciones son:
+
+$$10^{300}$$
+
+El universo observable tiene alrededor de $10^{80}$ átomos. No es que tarde mucho: es que no se puede, con ninguna computadora, hoy ni nunca. Y 300 variables es un modelo modesto —cualquier modelo de crédito serio tiene más.
+
+El problema no es la lentitud de la máquina. Es que la búsqueda a ciegas **crece exponencialmente con el número de coeficientes**, y todo lo interesante en Machine Learning vive en dimensiones altas.
+
+**Pregunta 3: tiraron a la basura la pendiente.** Cada vez que evaluaron el error obtuvieron la *altura* de la curva en ese punto, y descartaron un dato que estaba ahí mismo: **en qué dirección y qué tan rápido bajaba el error**. Entre $\beta=1$ y $\beta=2$ el error cayó 101.7 unidades; entre $\beta=4$ y $\beta=5$ subió 78.3. Esa información dice, sin adivinar, hacia qué lado hay que moverse.
+
+Y aquí está lo que salva el problema de las 300 dimensiones: esa pendiente se puede calcular con una fórmula —la derivada— **para los 300 coeficientes a la vez**, con una sola pasada por los datos. El costo deja de ser exponencial en el número de variables y se vuelve **lineal**.
+
+Si alguien en su equipo dijo *"empiecen donde sea, vean para qué lado baja, den un paso en esa dirección y repitan"*, acaban de inventar el **Descenso en Gradiente**, el algoritmo que entrena hoy desde una regresión lineal hasta un modelo de lenguaje.
+:::
+
+#### La intuición: bajar la montaña con niebla
+
+Están parados en la ladera de un valle, de noche y con niebla espesa. No ven el fondo, no ven a diez metros. Pero sí pueden sentir, con los pies, **hacia qué lado baja el terreno** justo donde están parados.
+
+La estrategia es obvia: dar un paso hacia donde baja, volver a sentir la inclinación, dar otro paso. Repetir hasta que el suelo se sienta plano: ahí está el fondo.
+
+Traducido al problema:
+
+| En la montaña | En el modelo |
+|---------------|--------------|
+| Su posición | Los valores actuales de los coeficientes $\beta$ |
+| La altura del terreno | El error $J(\beta)$ que produce ese modelo |
+| La inclinación bajo sus pies | El **gradiente**: la derivada del error respecto a cada coeficiente |
+| El tamaño de su paso | La **tasa de aprendizaje** $\alpha$ |
+| El fondo del valle | Los coeficientes que minimizan el error |
+
+Nadie necesita ver el mapa completo. Basta con información **local**: la pendiente en el punto donde uno está.
+
+#### La regla de actualización
+
+Formalmente, el algoritmo repite un solo renglón:
+
+$$\beta_j \leftarrow \beta_j - \alpha \frac{\partial J}{\partial \beta_j}$$
+
+Léanlo por partes:
+
+- $\dfrac{\partial J}{\partial \beta_j}$ es la pendiente del error en la dirección del coeficiente $j$. Si es **positiva**, aumentar $\beta_j$ empeora el error.
+- El **signo menos** es todo el algoritmo: si la pendiente es positiva, el coeficiente **baja**; si es negativa, sube. Siempre en contra de la pendiente, siempre cuesta abajo.
+- $\alpha$ decide qué tan largo es el paso.
+
+Al vector de todas las derivadas parciales, $\nabla J = \left(\frac{\partial J}{\partial \beta_0}, \dots, \frac{\partial J}{\partial \beta_p}\right)$, se le llama **gradiente**, y apunta en la dirección de máximo ascenso. Moverse en $-\nabla J$ es bajar por la ruta más empinada disponible.
+
+#### El gradiente de la regresión lineal
+
+Escribamos el error como promedio (dividir entre $n$ no cambia dónde está el mínimo, solo la escala del paso):
+
+$$J(\beta) = \frac{1}{n}\sum_{i=1}^{n} \left(y^{(i)} - \hat{y}^{(i)}\right)^2 \qquad \text{con} \qquad \hat{y}^{(i)} = \beta_0 + \beta_1 x_1^{(i)} + \dots + \beta_p x_p^{(i)}$$
+
+Derivando respecto a un coeficiente cualquiera:
+
+$$\frac{\partial J}{\partial \beta_j} = -\frac{2}{n}\sum_{i=1}^{n} \underbrace{\left(y^{(i)} - \hat{y}^{(i)}\right)}_{\text{residuo } r^{(i)}} \; x_j^{(i)}$$
+
+La regla completa para la regresión lineal queda:
+
+$$\beta_j \leftarrow \beta_j + \frac{2\alpha}{n}\sum_{i=1}^{n} r^{(i)} x_j^{(i)}$$
+
+**Esa fórmula tiene una lectura de negocio muy concreta.** El término $\sum r^{(i)} x_j^{(i)}$ mide si lo que el modelo **todavía se está equivocando** sigue moviéndose junto con la variable $j$:
+
+- Si los meses en que el modelo se queda corto ($r > 0$) son justamente los de mucho gasto en televisión, esa suma es positiva y el coeficiente de televisión **sube**: el error todavía tenía televisión adentro.
+- Si ya no hay ninguna relación entre el error restante y la variable, la suma es cero y ese coeficiente **deja de moverse**.
+
+Por eso el algoritmo se detiene donde se detiene: en el punto en que **no queda rastro de ninguna variable dentro del error**. Ese es exactamente el mismo punto que encuentra Mínimos Cuadrados, ahora alcanzado paso a paso en lugar de resuelto de un golpe.
+
+#### El ejemplo, paso a paso
+
+Volvamos a los cuatro meses de la dinámica, arrancando en un $\beta_0 = 1$ elegido arbitrariamente, con $\alpha = 0.01$:
+
+| Paso | $\beta$ actual | Error | Gradiente | $\beta$ siguiente |
+|-----:|---------------:|------:|----------:|------------------:|
+| 0 | 1.000 | 144.86 | −131.70 | 2.317 |
+| 1 | 2.317 | 23.44 | −52.68 | 2.844 |
+| 2 | 2.844 | 4.01 | −21.07 | 3.055 |
+| 3 | 3.055 | 0.91 | −8.43 | 3.139 |
+| 4 | 3.139 | 0.41 | −3.37 | 3.173 |
+| 5 | 3.173 | 0.33 | −1.35 | 3.186 |
+| 6 | 3.186 | 0.32 | −0.54 | 3.191 |
+| 7 | 3.191 | 0.31 | −0.22 | 3.194 |
+| 8 | 3.194 | 0.31 | −0.09 | 3.194 |
+
+En nueve pasos llegó a 3.194, contra el óptimo exacto de 3.195. El becario habría necesitado mil evaluaciones para lo mismo.
+
+![Descenso en gradiente sobre la curva de error](imgs/descenso_gradiente.png)
+
+Fíjense en la columna del gradiente: **−131.70, −52.68, −21.07, −8.43…** El algoritmo frena solo. Lejos del mínimo la pendiente es pronunciada y los pasos son largos; cerca del fondo la pendiente se aplana y los pasos se acortan sin que nadie lo programe. Esa es la razón por la que no se pasa de largo y por la que "detenerse" tiene un significado natural: cuando el gradiente es casi cero, el modelo ya no tiene nada que aprender de estos datos.
+
+#### La tasa de aprendizaje $\alpha$: el único parámetro que hay que elegir
+
+El tamaño del paso no viene de los datos: lo elige quien entrena el modelo. Es el ejemplo más limpio de un **hiperparámetro**.
+
+![Tres tasas de aprendizaje](imgs/tasa_aprendizaje.png)
+
+| $\alpha$ | Qué pasa | Síntoma |
+|---------|----------|---------|
+| **Muy chica** (0.001) | Avanza en la dirección correcta, pero a paso de tortuga: tras nueve iteraciones va en $\beta = 1.94$ y el mínimo está en 3.195 | El entrenamiento es carísimo y parece que "no aprende" |
+| **Adecuada** (0.01) | Llega al mínimo en unas cuantas iteraciones y se queda ahí | El error baja rápido y luego se aplana |
+| **Muy grande** (0.035) | Se pasa del mínimo, cae más arriba del otro lado, se vuelve a pasar con más fuerza; tras nueve pasos está en $\beta = 8.37$, mucho más lejos que donde empezó | El error **crece** en cada iteración, o aparecen `NaN` |
+
+La regla práctica es simple: si el error sube o explota, la tasa es demasiado grande; si baja pero desesperadamente lento, es demasiado chica. En la práctica se prueba una escala logarítmica (0.0001, 0.001, 0.01, 0.1) y se grafica el error contra la iteración —esa gráfica se llama **curva de aprendizaje** y es lo primero que se revisa cuando un entrenamiento sale mal.
+
+#### Por qué hay que estandarizar las variables
+
+Hay una condición que casi nadie menciona la primera vez y que hace fracasar más entrenamientos que ninguna otra cosa: **el descenso en gradiente da un paso del mismo tamaño en todas las direcciones**.
+
+Supongan dos variables: antigüedad del cliente (de 1 a 10 años) e ingreso (de 20 a 100 mil pesos). Un cambio de "una unidad" significa un año en una y un peso en la otra, cosas que no se parecen en nada. El resultado es que la superficie de error deja de ser un tazón redondo y se convierte en un **cañón largo y angosto**.
+
+![Efecto de la escala en el descenso](imgs/descenso_escalas.png)
+
+En el panel izquierdo el paso que sirve para una dirección es un desastre para la otra: el algoritmo rebota de pared a pared del cañón y casi no avanza hacia el fondo. En el panel derecho, con las dos variables convertidas a desviaciones estándar, las curvas de nivel son casi circulares y el descenso camina en línea recta hacia el mínimo.
+
+Es el mismo cuidado que exigirá K-Means más adelante en el capítulo, y por una razón emparentada: **cuando un algoritmo mide distancias o pasos, las unidades de las variables se vuelven parte del algoritmo**.
+
+::: {.callout-warning}
+Este problema es exclusivo del método iterativo. Mínimos Cuadrados resuelto en forma exacta da el mismo resultado con o sin estandarizar, porque no "camina" hacia ningún lado. Si su modelo entrena con descenso en gradiente —redes neuronales, `SGDRegressor`, regresión logística en muchas implementaciones— estandarizar no es opcional.
+:::
+
+
+::: {.callout-note}
+#### Un detalle que solo es fácil aquí
+
+La curva de error de la regresión lineal es un tazón: tiene **un solo mínimo**, y no importa dónde se arranque, el descenso llega al mismo lugar. A esa propiedad se le llama **convexidad**.
+
+Las redes neuronales no son convexas: su superficie de error tiene valles múltiples, y dónde se termine depende de dónde se arrancó. Esa es la razón por la que entrenar una red dos veces con los mismos datos puede dar dos modelos distintos, y por la que la inicialización de los pesos es un tema de investigación. En regresión lineal, ese problema simplemente no existe.
+:::
+
+#### Lo que abre esta sección
+
+Ahora que el entrenamiento es un proceso de pasos y no una fórmula, algo se vuelve posible: **modificar lo que el modelo persigue en cada paso**.
+
+Si al error le sumamos un término que también castigue el tamaño de los coeficientes, el gradiente cambia y la regla de actualización se convierte en "acércate a los datos, pero encoge un poco cada coeficiente antes de moverlo". Esa idea de una línea es la que, unas páginas más adelante, tendrá nombre propio: **regularización**.
+
 ### Interpretación de Negocios: Caja Blanca
 
 A diferencia de las redes neuronales ("Caja Negra"), la regresión lineal es una **"Caja Blanca"**: nos dice el *por qué*.
@@ -581,6 +758,16 @@ Donde:
 - $\lambda$ (lambda) es el **parámetro de regularización** que controla la intensidad de la penalización
   - $\lambda = 0$ → Regresión lineal estándar (sin penalización)
   - $\lambda$ muy grande → Fuerza todos los coeficientes hacia cero
+
+**Cómo se ve desde el descenso en gradiente:**
+
+Derivando esa función de costo —con el error escrito como promedio, igual que en la sección anterior— el gradiente gana un solo término extra, $2\lambda\beta_j$, y la regla de actualización se convierte en:
+
+$$\beta_j \leftarrow \underbrace{\beta_j(1 - 2\alpha\lambda)}_{\text{encoger}} + \underbrace{\frac{2\alpha}{n}\sum_{i=1}^{n} r^{(i)} x_j^{(i)}}_{\text{acercarse a los datos}}$$
+
+Es literalmente el mismo algoritmo de la sección anterior con un paso añadido: **antes de moverse hacia los datos, cada coeficiente se encoge un porcentaje fijo**. Un coeficiente solo consigue quedarse grande si los datos lo empujan hacia arriba en cada iteración con suficiente fuerza como para compensar ese encogimiento constante. En redes neuronales a esta misma operación se le llama *weight decay*, y es exactamente la misma fórmula.
+
+Vale la pena notar que también arregla el problema de la fórmula exacta: la solución cerrada de Ridge es $\hat{\beta} = (X^T X + \lambda I)^{-1}X^T y$, y ese $\lambda I$ sumado a la diagonal vuelve invertible una matriz que sin él era casi singular. Es la traducción algebraica de la misma idea.
 
 **Utilidad de Ridge:**
 
