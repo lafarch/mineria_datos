@@ -922,6 +922,265 @@ $$P(y=1) = \frac{1}{1 + e^{-(\beta_0 + \beta_1 x)}}$$
 
 Esta función toma cualquier valor numérico (desde $-\infty$ hasta $+\infty$) y lo "aplasta" elegantemente en un rango estricto entre **0 y 1**. La curva resultante tiene forma de "S".
 
+### La Función de Pérdida: Cómo se Entrena una Regresión Logística
+
+La sigmoide resuelve el problema de que las predicciones se salgan del rango de 0 a 1. No resuelve el segundo, que es el mismo que tuvimos en la regresión lineal: **¿de dónde salen las $\beta$?**
+
+Allá la respuesta fue Mínimos Cuadrados: minimizar la suma de los errores al cuadrado. Aquí no puede ser lo mismo, y vale la pena entender por qué **antes** de escribir la fórmula.
+
+::: {.callout-note}
+#### Pregunta para discutir
+
+Tres equipos entregaron un modelo de churn. Los evaluaron con los mismos ocho clientes y el mismo umbral de 0.5:
+
+| Cliente | P(churn) A | P(churn) B | P(churn) C | Lo que pasó |
+|--------:|-----------:|-----------:|-----------:|-------------|
+| 1 | 0.55 | 0.95 | 0.95 | Se fue |
+| 2 | 0.55 | 0.90 | 0.90 | Se fue |
+| 3 | 0.55 | 0.85 | 0.85 | Se fue |
+| 4 | 0.45 | 0.45 | 0.02 | Se fue |
+| 5 | 0.45 | 0.10 | 0.10 | Se quedó |
+| 6 | 0.45 | 0.08 | 0.08 | Se quedó |
+| 7 | 0.45 | 0.05 | 0.05 | Se quedó |
+| 8 | 0.55 | 0.55 | 0.98 | Se quedó |
+
+Tres preguntas, en equipos:
+
+1. Cuenten los aciertos de cada modelo con umbral 0.5. ¿Cuál se llevan a producción?
+2. Alguien propone: *"pues usemos el porcentaje de aciertos como función de costo y que el descenso en gradiente lo maximice"*. Denme dos razones por las que eso no puede funcionar.
+3. ¿Qué tendría que castigar la función de costo para que el modelo C quedara descalificado?
+:::
+
+::: {.callout-tip collapse="true"}
+#### Resolución
+
+**Pregunta 1: los tres aciertan exactamente lo mismo, y no valen lo mismo.** Los tres se equivocan en el cliente 4 y en el 8, y aciertan en los otros seis. Su matriz de confusión es **idéntica**: 3 TP, 1 FP, 1 FN, 3 TN.
+
+| Modelo | TP | FP | FN | TN | Accuracy | Error cuadrático | Log-loss |
+|--------|---:|---:|---:|---:|---------:|-----------------:|---------:|
+| A — tímido | 3 | 1 | 1 | 3 | 0.75 | 0.228 | 0.648 |
+| B — seguro | 3 | 1 | 1 | 3 | 0.75 | 0.082 | 0.270 |
+| C — temerario | 3 | 1 | 1 | 3 | 0.75 | 0.247 | 1.048 |
+
+Si su reporte a la dirección se detiene en la matriz de confusión, los tres modelos son el mismo modelo. Y basta mirar las probabilidades para ver que no:
+
+- **A nunca se compromete.** Todo lo pone entre 0.45 y 0.55. Es inservible para priorizar: si el call center tiene presupuesto para llamar a tres clientes, A no dice a cuáles.
+- **B ordena bien y con convicción.** Sus tres aciertos positivos son 0.95, 0.90 y 0.85; sus dos errores son 0.45 y 0.55, es decir, **falla dudando**, que es la forma correcta de fallar.
+- **C es idéntico a B en seis clientes y catastrófico en dos.** Le dijo 0.02 a un cliente que se fue y 0.98 a uno que se quedó. Si al de 0.98 le colgaron una oferta de retención de \$50,000, ese dinero ya salió por la puerta.
+
+Lo que distingue a los tres no es la clasificación: es la **probabilidad**. Cualquier función de costo que solo mire etiquetas es ciega a la diferencia.
+
+**Pregunta 2: el porcentaje de aciertos no se puede optimizar por gradiente.** Dos razones:
+
+1. **Es ciego**, como acabamos de ver: empata a A, B y C en 0.75.
+2. **Su derivada es cero casi en todas partes.** El porcentaje de aciertos solo cambia cuando una probabilidad **cruza** el umbral. Muevan $\beta$ un poquito: si ninguna predicción cruza 0.5, el número no se mueve —pendiente 0, el descenso en gradiente se queda parado—. Y cuando una cruza, salta de golpe: pendiente infinita. Volviendo a la metáfora de la montaña: **no es una ladera, es una escalera**. Escalones planos y paredes verticales. Los pies no sienten para dónde bajar.
+
+**Pregunta 3: hay que castigar la confianza equivocada, y sin techo.** Si el castigo tiene tope, un error catastrófico cuesta lo mismo que uno tímido. Miren el error cuadrático, que sí distingue calidad de probabilidad y por eso no es una mala idea: con $(y - p)^2$ el peor error posible cuesta 1. Por eso C (0.247) le sale apenas peor que A (0.228), aunque C haya quemado \$50,000 y A solo sea inútil.
+
+El castigo que necesitamos crece **sin límite** cuando el modelo le asigna una probabilidad cercana a cero a lo que efectivamente pasó. Ese castigo es el logaritmo:
+
+| $p$ que asignó el modelo | Error cuadrático $(1-p)^2$ | Log-loss $-\ln p$ |
+|-------------------------:|---------------------------:|-------------------:|
+| 0.99 | 0.000 | 0.01 |
+| 0.90 | 0.010 | 0.11 |
+| 0.70 | 0.090 | 0.36 |
+| 0.50 | 0.250 | 0.69 |
+| 0.30 | 0.490 | 1.20 |
+| 0.10 | 0.810 | 2.30 |
+| 0.01 | 0.980 | 4.61 |
+| 0.001 | 0.998 | 6.91 |
+
+*(la tabla supone que el cliente sí se fue, $y = 1$)*
+
+El error cuadrático sube de 0.98 a 0.998 —prácticamente no distingue— entre equivocarse con 99% de seguridad y equivocarse con 99.9%. El logaritmo pasa de 4.61 a 6.91 y sigue subiendo hacia el infinito. Con esa función de costo, C ya no empata: sale **cuatro veces peor** que B (1.048 contra 0.270), que es exactamente lo que el negocio siente.
+
+Si alguien en su equipo dijo *"cóbrenle caro al que jura y se equivoca"*, acaban de inventar el **log-loss**.
+:::
+
+#### La fórmula: log-loss (o entropía cruzada)
+
+Para **un solo cliente**, con $p^{(i)}$ la probabilidad que el modelo le asignó a la clase 1 y $y^{(i)} \in \{0, 1\}$ lo que realmente pasó:
+
+$$\text{pérdida}^{(i)} = -\left[\, y^{(i)}\ln p^{(i)} + \left(1 - y^{(i)}\right)\ln\left(1 - p^{(i)}\right)\,\right]$$
+
+El truco de esa expresión es que $y^{(i)}$ solo puede valer 0 o 1, así que **siempre se apaga uno de los dos términos**:
+
+- Si el cliente se fue ($y = 1$), queda $-\ln p$: el castigo por la probabilidad que le diste al churn.
+- Si se quedó ($y = 0$), queda $-\ln(1 - p)$: el castigo por la probabilidad que le diste a que se quedara.
+
+En los dos casos es la misma frase: **el logaritmo negativo de la probabilidad que le asignaste a lo que en realidad ocurrió.** Le atinaste con seguridad, pagas casi nada; te equivocaste con seguridad, pagas una fortuna.
+
+Promediando sobre los $n$ clientes queda la función de costo completa:
+
+$$J(\beta) = -\frac{1}{n}\sum_{i=1}^{n}\left[\, y^{(i)}\ln p^{(i)} + \left(1 - y^{(i)}\right)\ln\left(1 - p^{(i)}\right)\,\right] \qquad \text{con} \qquad p^{(i)} = \frac{1}{1 + e^{-\left(\beta_0 + \beta_1 x_1^{(i)} + \dots + \beta_p x_p^{(i)}\right)}}$$
+
+Esta función tiene dos nombres según quién la use: **log-loss** en machine learning, **entropía cruzada** (*cross-entropy*) en teoría de la información. Es la misma fórmula, y es la que entrena desde este modelo hasta un modelo de lenguaje.
+
+#### De dónde sale: máxima verosimilitud
+
+El log-loss no se inventó para que la tabla anterior saliera bonita. Sale de una pregunta estadística legítima: *¿qué valores de $\beta$ hacen que los datos que efectivamente observamos sean lo más creíbles posible?*
+
+Si el modelo dice que el cliente $i$ se va con probabilidad $p^{(i)}$, entonces la probabilidad de haber observado lo que observamos en ese cliente es $p^{(i)}$ si se fue, y $1 - p^{(i)}$ si se quedó. Las dos se escriben de un jalón como $\left(p^{(i)}\right)^{y^{(i)}}\left(1 - p^{(i)}\right)^{1 - y^{(i)}}$. Si los clientes son independientes, la probabilidad de la muestra completa es el producto:
+
+$$L(\beta) = \prod_{i=1}^{n} \left(p^{(i)}\right)^{y^{(i)}}\left(1 - p^{(i)}\right)^{1 - y^{(i)}}$$
+
+A eso se le llama **verosimilitud** (*likelihood*), y queremos el $\beta$ que la maximice. Tal como está no sirve: multiplicar diez mil números menores que 1 da un resultado que ninguna computadora puede representar, y derivar un producto de diez mil factores es un ejercicio de masoquismo. La solución es tomar logaritmo —que convierte productos en sumas y no cambia dónde está el máximo, porque es una función creciente— y ponerle un signo menos para pasar de *maximizar* a *minimizar*:
+
+$$-\ln L(\beta) = -\sum_{i=1}^{n}\left[\, y^{(i)}\ln p^{(i)} + \left(1 - y^{(i)}\right)\ln\left(1 - p^{(i)}\right)\,\right] \; = \; n \cdot J(\beta)$$
+
+Es **exactamente** el log-loss. La traducción de negocio es esta:
+
+> Minimizar el log-loss es elegir el modelo bajo el cual la historia que realmente ocurrió era la más creíble.
+
+#### El gradiente: la misma regla de actualización de antes
+
+Ya tenemos qué minimizar. Falta cómo, y la respuesta es la de la sección de regresión lineal: descenso en gradiente. Derivando $J$ respecto a un coeficiente cualquiera —la sigmoide y el logaritmo se cancelan de una forma casi milagrosa— queda:
+
+$$\frac{\partial J}{\partial \beta_j} = -\frac{1}{n}\sum_{i=1}^{n} \underbrace{\left(y^{(i)} - p^{(i)}\right)}_{\text{residuo } r^{(i)}} x_j^{(i)}$$
+
+Y la regla de actualización:
+
+$$\beta_j \leftarrow \beta_j + \frac{\alpha}{n}\sum_{i=1}^{n} r^{(i)} x_j^{(i)} \qquad \text{con} \qquad r^{(i)} = y^{(i)} - p^{(i)}$$
+
+**Compárenla con la de la regresión lineal.** Es la misma línea. Lo único que cambia es qué significa el residuo: allá era $y - \hat{y}$, pesos que faltaron; aquí es $y - p$, la distancia entre lo que pasó (0 o 1) y la probabilidad que el modelo le había asignado. Un cliente al que el modelo le dio 0.9 y se fue aporta $r = 0.1$: casi nada, ya estaba bien clasificado. Uno al que le dio 0.1 y se fue aporta $r = 0.9$: mueve los coeficientes con fuerza.
+
+La lectura de negocio también es la misma: si los clientes en los que el modelo **todavía se equivoca** son justamente los de muchas quejas, la suma $\sum r^{(i)} x_j^{(i)}$ es positiva y el coeficiente de quejas sube.
+
+::: {.callout-note}
+#### ¿Y si de todas formas usáramos el error cuadrático?
+
+Además de castigar poco los errores graves, tiene un problema mecánico. Al derivar $(y - p)^2$ con $p$ pasando por la sigmoide, aparece un factor extra $p(1-p)$ que se hace diminuto en los extremos. Vean qué corrección recibe cada regla cuando el modelo está **seguro y equivocado** (el cliente se quedó, $y = 0$):
+
+| $p$ que dijo el modelo | Corrección con log-loss | Corrección con error cuadrático |
+|-----------------------:|------------------------:|--------------------------------:|
+| 0.60 | 0.600 | 0.288 |
+| 0.90 | 0.900 | 0.162 |
+| 0.99 | 0.990 | 0.020 |
+| 0.999 | 0.999 | 0.002 |
+
+Con el error cuadrático, **el aprendizaje se paraliza justo donde más falta hace**: en $p = 0.999$ corrige 500 veces menos que el log-loss. El modelo se queda atorado en su error, seguro de sí mismo. El log-loss corrige en proporción directa a lo equivocado que estaba. Este mismo fenómeno —el gradiente que se desvanece— reaparecerá en el capítulo de redes neuronales, y la solución será la misma función de costo.
+:::
+
+#### Una diferencia importante con la regresión lineal
+
+En la regresión lineal existía la fórmula cerrada $\hat{\beta} = (X^TX)^{-1}X^Ty$: el descenso en gradiente era una elegancia, no una necesidad. **Aquí no hay fórmula cerrada.** La ecuación $\nabla J(\beta) = 0$ mezcla los coeficientes dentro de una exponencial y no se puede despejar a mano, ni con álgebra, ni con paciencia.
+
+La buena noticia es que $J$ es **convexa**: tiene un solo mínimo, sin valles falsos donde atorarse. Cualquier método iterativo decente —descenso en gradiente, o su versión acelerada de segundo orden que usan `scikit-learn` y `statsmodels`— llega al óptimo global. Es decir: en la regresión logística, el algoritmo de la sección anterior no es una alternativa. **Es la única puerta de entrada.**
+
+::: {.callout-important}
+Elegir la función de pérdida es la decisión de negocio disfrazada de detalle técnico. Pedir log-loss es pedirle al modelo **probabilidades honestas**; pedir porcentaje de aciertos es pedirle etiquetas y renunciar a todo lo demás. El optimizador va a entregar, con precisión, el mínimo de lo que se le pidió.
+:::
+
+### Interpretación de los Coeficientes: Momios y Odds Ratios
+
+La regresión logística sigue siendo una **caja blanca**, pero la lectura ya no es tan directa como en la lineal. Allá $\beta = 0.75$ significaba "750 pesos más de ventas" y se acababa la discusión. Aquí el modelo no predice pesos: predice probabilidad, y la predice **a través de la sigmoide**. El coeficiente vive en otra escala, y confundirlas es el error más común al presentar estos modelos.
+
+::: {.callout-note}
+#### Pregunta para discutir
+
+Este es un modelo de churn ajustado sobre 20,000 clientes de una empresa de telecomunicaciones:
+
+| Variable | $\beta$ |
+|----------|--------:|
+| Quejas registradas (por queja) | +0.80 |
+| Antigüedad como cliente (por mes) | −0.032 |
+| Tuvo descuento (sí = 1) | −0.65 |
+| Gasto mensual (por cada \$100) | +0.20 |
+| Intercepto | −1.08 |
+
+Dos analistas presentan el mismo modelo a la dirección:
+
+- **Ana**: *"cada queja adicional sube la probabilidad de churn en 0.80; o sea, 80 puntos porcentuales"*.
+- **Beto**: *"cada queja adicional sube la probabilidad de churn un 80%"*.
+
+Tres preguntas:
+
+1. ¿Quién tiene razón? Pruébenlo con un cliente que ya traía 40% de riesgo y registra **dos** quejas.
+2. Dos clientes registran una queja cada uno: el primero venía en 5% de riesgo, el segundo en 50%. ¿A cuál le sube más la probabilidad?
+3. ¿Es "quejas" ($+0.80$) veinticinco veces más importante que "antigüedad" ($-0.032$)?
+:::
+
+::: {.callout-tip collapse="true"}
+#### Resolución
+
+**Pregunta 1: ninguno de los dos, y el contraejemplo los tumba a los dos.** Con la lectura de Ana, el cliente de 40% con dos quejas queda en $40\% + 2 \times 80 = 200\%$. Con la de Beto, en $40\% \times 1.8 \times 1.8 = 129.6\%$. Las dos se salen del rango, y la sigmoide existe precisamente para que eso no pase.
+
+El problema es que ninguna de las dos lecturas opera en la escala correcta. Lo que es lineal en la regresión logística **no es la probabilidad**: es el logaritmo de los momios. Despejando la sigmoide:
+
+$$\ln\left(\frac{p}{1 - p}\right) = \beta_0 + \beta_1 x_1 + \dots + \beta_p x_p$$
+
+Los **momios** (*odds*) son la razón "a favor entre en contra". Una probabilidad de 20% es un momio de $0.20/0.80 = 0.25$, o *"una a cuatro"*. Es la escala de las apuestas, y su rango va de 0 a infinito, no de 0 a 1. El lado izquierdo se llama **logit**, y la frase correcta es: *la regresión logística es lineal en el logit*.
+
+Entonces $\beta$ es **cuánto se le suma al logaritmo de los momios** por una unidad más de la variable. Y como sumar en logaritmos es multiplicar afuera:
+
+$$e^{0.80} = 2.23$$
+
+> *"Cada queja registrada **multiplica por 2.23 los momios** de que el cliente se vaya, manteniendo todo lo demás constante."*
+
+Ese $e^{\beta}$ se llama **odds ratio** (razón de momios) y es la forma estándar de reportar una logística. Con esa lectura, el cliente de 40% —momios 0.667— con dos quejas queda en $0.667 \times 2.23 \times 2.23 = 3.31$ de momios, es decir 76.8% de probabilidad. Dentro del rango, siempre.
+
+**Pregunta 2: al de 50%, y por mucho.** Los momios de los dos se multiplican por el mismo 2.23, pero eso se traduce en cambios de probabilidad muy distintos:
+
+| Probabilidad antes | Momios antes | Momios después | Probabilidad después | Cambio |
+|-------------------:|-------------:|---------------:|---------------------:|-------:|
+| 2% | 0.020 | 0.045 | 4.3% | +2.3 pp |
+| 5% | 0.053 | 0.117 | 10.5% | +5.5 pp |
+| 20% | 0.250 | 0.556 | 35.7% | +15.7 pp |
+| 50% | 1.000 | 2.226 | 69.0% | +19.0 pp |
+| 80% | 4.000 | 8.902 | 89.9% | +9.9 pp |
+| 95% | 19.000 | 42.285 | 97.7% | +2.7 pp |
+
+El de 5% sube 5.5 puntos; el de 50% sube 19. Y el de 95% casi no se mueve (+2.7) aunque sus momios también se dupliquen: ya estaba perdido, no hay a dónde subir. El efecto en probabilidad es **máximo en la parte empinada de la S y se aplana en los dos extremos** — es la forma de la sigmoide, otra vez.
+
+Ahí está el resultado que importa para el negocio: **el mismo coeficiente vale distinto para cada cliente**. Es lo contrario de la regresión lineal, donde $\beta = 0.75$ valía 750 pesos para todos. Por eso una campaña de retención rinde más en la franja media de riesgo que en los extremos.
+
+Para el pasillo, hay una aproximación útil: **la regla de dividir entre 4**. El cambio máximo en probabilidad, en el punto más empinado, es a lo más $\beta/4$. Aquí $0.80/4 = 0.20$, y el máximo real es 0.197. Es decir: *"a lo más 20 puntos porcentuales, y menos en los extremos"*.
+
+**Pregunta 3: no, porque las escalas no son comparables.** El $+0.80$ es **por queja** y el $-0.032$ es **por mes**. Nadie acumula 25 quejas, pero cualquier cliente acumula 25 meses de antigüedad — y $25 \times (-0.032) = -0.80$ cancela exactamente una queja. El tamaño del coeficiente depende de las unidades en que se midió la variable, así que compararlos crudos no dice nada.
+
+Para comparar hay que ponerlos en unidades comunes. La forma estándar es el efecto de **una desviación estándar** de cada variable:
+
+| Variable | $\beta$ estandarizado | $e^{\beta}$ |
+|----------|---------------------:|------------:|
+| Quejas | +0.80 | 2.23 |
+| Antigüedad | −0.54 | 0.58 |
+| Gasto mensual | +0.40 | 1.49 |
+| Descuento | −0.31 | 0.73 |
+
+Es el mismo modelo, leído en unidades comparables, y el orden cambia: la antigüedad pasa al segundo lugar, muy por delante del descuento. Lo que parecía un coeficiente despreciable era la segunda variable más importante del modelo.
+:::
+
+#### Cómo se lee un coeficiente, en la práctica
+
+Tres pasos, siempre los mismos:
+
+1. **El signo** dice la dirección: positivo sube el riesgo, negativo lo baja.
+2. **$e^{\beta}$** dice el tamaño, y se lee sobre los **momios**: mayor que 1 los multiplica, menor que 1 los divide.
+3. **El contexto del cliente** dice cuánto es eso en probabilidad — que es la tabla de la resolución anterior, no un número fijo.
+
+Aplicado al modelo completo:
+
+| Variable | $\beta$ | $e^{\beta}$ | Lectura para la dirección |
+|----------|--------:|------------:|---------------------------|
+| Quejas (por queja) | +0.80 | 2.23 | Cada queja **duplica y un poco más** los momios de churn (+123%) |
+| Antigüedad (por mes) | −0.032 | 0.969 | Cada mes los baja 3.1%; un año completo los deja en $0.969^{12} = 0.68$, es decir **−32%** |
+| Descuento (sí) | −0.65 | 0.52 | Tener descuento **corta los momios casi a la mitad** (−48%) |
+| Gasto mensual (por \$100) | +0.20 | 1.22 | Cada \$100 de gasto los sube 22%: los clientes de plan alto son más volátiles |
+
+Dos notas sobre la mecánica:
+
+- **Los efectos se acumulan multiplicando.** Un cliente con tres quejas y dos años de antigüedad tiene sus momios multiplicados por $2.23^3 \times 0.969^{24} = 11.1 \times 0.47 = 5.2$. En la escala de los momios todo se multiplica; en la del logit, todo se suma.
+- **El intercepto** es el logit cuando todas las variables valen cero. Aquí, $-1.08$ corresponde a momios de 0.34 y una probabilidad de **25.4%**: el riesgo de un cliente recién llegado, sin quejas, sin descuento y con gasto promedio. Solo tiene lectura de negocio si ese cliente existe; cuando "todas las variables en cero" describe a nadie, el intercepto es puro ajuste algebraico.
+
+::: {.callout-warning}
+#### Cuatro maneras de equivocarse al presentar esto
+
+1. **Confundir odds ratio con riesgo relativo.** "Multiplica los momios por 2.23" **no** es "multiplica la probabilidad por 2.23" (véase la tabla: 50% no se va a 111%). Solo cuando el evento es raro ($p < 5\%$) los dos números se parecen — y ahí viene la confusión, porque en fraude y en default suelen parecerse lo suficiente para que nadie note el error hasta que el evento deja de ser raro.
+2. **Leer una dummy sin decir contra qué.** "Plan Premium: odds ratio 1.4" no significa nada si no se dice **frente a qué categoría base**. Todo coeficiente de variable categórica es una comparación contra la categoría que se dejó fuera.
+3. **Interpretar coeficientes con variables correlacionadas.** El "manteniendo todo lo demás constante" tiene las mismas letras chiquitas que en la regresión lineal: si dos variables miden casi lo mismo, sus coeficientes se reparten el efecto de forma arbitraria y ninguno de los dos es interpretable. Es el problema de la sección siguiente.
+4. **Leer $\beta$ como causalidad.** El modelo midió una asociación en datos históricos. Borrar las quejas de la base no reduce el churn de nadie; el coeficiente no dice qué pasa si **intervenimos**, dice qué pasó cuando observamos.
+:::
+
 ### Probabilidad vs. Etiqueta Pura: El Valor Real para el Negocio
 
 El valor real de la regresión logística no es solo la clasificación final, sino la **Probabilidad** subyacente.
@@ -1001,6 +1260,118 @@ Básicamente una gráfica que nos dice qué tan bueno es un modelo para distingu
 ![Curva ROC: Ejemplos reales](./imgs/roc_example.png)
 
 
+
+### Regularización en Regresión Logística: Ridge y Lasso
+
+Conceptualmente no hay nada nuevo respecto a la sección de regresión lineal: a la función de costo se le suma un término que castiga el tamaño de los coeficientes. Lo único que cambia es el primer término, que ya no es la suma de cuadrados sino el log-loss:
+
+$$\text{Ridge (L2): } \quad \underbrace{-\frac{1}{n}\sum_{i=1}^{n}\left[y^{(i)}\ln p^{(i)} + \left(1-y^{(i)}\right)\ln\left(1-p^{(i)}\right)\right]}_{\text{log-loss}} \; + \; \lambda \sum_{j=1}^{p} \beta_j^2$$
+
+$$\text{Lasso (L1): } \quad \text{log-loss} \; + \; \lambda \sum_{j=1}^{p} |\beta_j|$$
+
+Las consecuencias son las mismas que allá, y por las mismas razones: **L2 encoge todos los coeficientes y reparte el efecto entre variables correlacionadas sin eliminar ninguna; L1 manda coeficientes exactamente a cero y hace selección de variables**. La regla de actualización también gana el mismo paso extra —encoger antes de moverse hacia los datos— sobre el gradiente $r^{(i)} = y^{(i)} - p^{(i)}$ de la sección anterior.
+
+Lo que sí es nuevo es **por qué** aquí la regularización no es opcional.
+
+::: {.callout-note}
+#### Pregunta para discutir
+
+Un equipo ajusta una logística de churn con 40 clientes. Entre las variables está `solicitó_baja`: si el cliente llamó al call center a pedir la cancelación durante el mes. En la muestra, **los 20 clientes que llamaron se fueron, y ninguno de los otros 20 se fue**.
+
+Ajustan el modelo sin penalización y reportan:
+
+| Variable | $\beta$ | $e^{\beta}$ |
+|----------|--------:|------------:|
+| `solicitó_baja` | +17.45 | 37,847,664 |
+| `quejas` | +0.17 | 1.19 |
+
+Tres preguntas:
+
+1. El odds ratio dice que pedir la baja multiplica los momios de churn por **37 millones**. ¿Qué le contestan a la dirección?
+2. Un compañero corre el mismo código con más iteraciones del optimizador y le sale $\beta = +23$. Otro, con menos, obtiene $+9$. ¿Cuál de los tres es el correcto?
+3. Este problema tiene dos arreglos: uno al problema de optimización y otro a la definición del problema de negocio. ¿Cuáles son?
+:::
+
+::: {.callout-tip collapse="true"}
+#### Resolución
+
+**Pregunta 1: que ese número no significa nada, porque no existe.** Lo que hay aquí se llama **separación perfecta**: una variable que parte la muestra en dos sin un solo caso que contradiga la regla.
+
+Piénsenlo desde el log-loss. Con $\beta = 17$, el modelo le asigna a los que pidieron la baja una probabilidad de churn de 0.99999997, y paga un castigo diminuto pero positivo. Con $\beta = 30$ la probabilidad se acerca aún más a 1 y el castigo baja otro poquito. Con $\beta = 100$, otro poquito más. **Nunca hay una razón para detenerse**: mientras ningún dato contradiga la regla, agrandar el coeficiente siempre mejora la pérdida.
+
+El log-loss sigue siendo convexo, pero su mínimo está en el infinito y no se alcanza nunca. No hay estimación que reportar.
+
+**Pregunta 2: ninguno de los tres.** Los tres números son *"el punto donde el optimizador se rindió"*, y ese punto depende del número de iteraciones, de la tolerancia y del solver que se usó. Un coeficiente que cambia según el presupuesto de cómputo no es una estimación de nada. Por eso `scikit-learn` levanta un `ConvergenceWarning` en estos casos: es el modelo avisando que la pregunta está mal planteada.
+
+Además, esa fragilidad es **varianza en su forma más extrema**: basta **un solo** cliente nuevo que llame a cancelar y se quede para que el coeficiente se desplome de 17 a 3.
+
+**Pregunta 3, arreglo al problema de optimización: penalizar.** El término $\lambda\sum\beta_j^2$ le pone precio a crecer. Ahora cada unidad extra de coeficiente compra una mejora cada vez más pequeña en el log-loss y paga un costo cada vez mayor en la penalización; en algún punto deja de convenir, y **ahí vuelve a existir un mínimo, único y finito**:
+
+| Penalización | $\beta$ de `solicitó_baja` | $e^{\beta}$ | $\beta$ de `quejas` |
+|--------------|---------------------------:|------------:|--------------------:|
+| Ninguna ($\lambda = 0$) | +17.45 | 37,847,664 | +0.17 |
+| Ridge débil (`C = 100`) | +10.43 | 33,727 | +0.23 |
+| Ridge (`C = 1`) | +3.21 | 24.7 | +0.26 |
+| Ridge fuerte (`C = 0.1`) | +0.78 | 2.2 | +0.22 |
+
+Con Ridge estándar el coeficiente queda en +3.21, un odds ratio de 24.7: "pedir la baja multiplica por 25 los momios de irse". Eso sí es reportable, y sobre todo es **estable**: no cambia si el optimizador corre el doble de iteraciones.
+
+**Arreglo al problema de negocio: preguntarse de dónde salió esa variable.** Una variable que separa perfectamente casi nunca es un hallazgo; casi siempre es **fuga de información** (*data leakage*). "Solicitó la baja" no *predice* la cancelación: **es** la cancelación, registrada un día antes en otro sistema. En producción, el día que hay que decidir a quién llamar, esa columna todavía está vacía para todos.
+
+Ahí está la parte incómoda: **Ridge arregla el síntoma numérico y puede esconder el diagnóstico**. Con la penalización, el modelo deja de tronar, reporta un odds ratio razonable y presenta un AUC de 0.99 en validación — y no vale nada en producción. La estabilidad numérica no convierte una fuga en una predicción.
+:::
+
+#### Lasso: el selector de variables en clasificación
+
+El otro uso, idéntico al de la regresión lineal, es quedarse con las variables que importan. Con 300 clientes y 20 variables, de las cuales solo 4 tienen efecto real:
+
+| Modelo | Variables con coeficiente ≠ 0 | ¿Conservó las 4 relevantes? |
+|--------|------------------------------:|-----------------------------|
+| Sin penalización | 20 de 20 | Sí |
+| Ridge (`C = 1`) | 20 de 20 | Sí |
+| Lasso (`C = 0.1`) | 5 de 20 | Sí |
+| Lasso (`C = 0.05`) | 4 de 20 | Sí |
+
+Lasso apaga 15 de las 16 variables inútiles sin perder ninguna de las cuatro buenas. Sin penalización y con Ridge sobreviven las 20, cada una con su coeficiente chiquito y su interpretación espuria — y alguien, en alguna junta, va a leer en voz alta el odds ratio de una de esas 16.
+
+Por eso en clasificación de negocio Lasso suele ganar por razones que no son estadísticas: un **scorecard** de riesgo de crédito se audita variable por variable ante un regulador, y un modelo de 8 variables con odds ratios defendibles vale más que uno de 200 con 0.01 más de AUC.
+
+Existe también **Elastic Net**, que combina las dos penalizaciones y es la opción razonable cuando hay muchas variables correlacionadas *y* se quiere selección.
+
+::: {.callout-warning}
+#### Tres trampas de implementación
+
+**1. En `scikit-learn`, `C` no es $\lambda$: es su inverso.**
+
+$$C = \frac{1}{\lambda}$$
+
+- `C` grande (100, 1000) → penalización **débil**, coeficientes libres
+- `C` chico (0.1, 0.01) → penalización **fuerte**, coeficientes encogidos
+
+Es al revés de lo que dicta la intuición, y de ahí sale la mitad de los errores en tareas y exámenes.
+
+**2. `LogisticRegression` regulariza por default.** Su valor de fábrica es `C = 1.0` con penalización L2 activa: si ajustan un modelo sin tocar nada, ya está regularizado. Cuando sus coeficientes no coinciden con los de `statsmodels` (que no penaliza), ésta es la razón. Para pedir explícitamente que no penalice se usa `C = np.inf`.
+
+**3. Hay que estandarizar.** La penalización castiga el **tamaño** de los coeficientes, y ese tamaño depende de las unidades: una variable medida en pesos tiene coeficientes minúsculos y una medida en millones los tiene grandes, aunque su efecto real sea el mismo. Sin estandarizar, la penalización castiga arbitrariamente a unas variables y perdona a otras. El intercepto, por convención, no se penaliza.
+:::
+
+#### Cómo elegir $\lambda$ (o `C`)
+
+Con **validación cruzada**, igual que en la regresión lineal: se prueba una malla de valores, se evalúa el error en datos que el modelo no vio, y se elige el que mejor generaliza.
+
+Aquí se cierra el círculo con la primera sección de este tema: **el criterio con el que eligen `C` debe ser la métrica que le importa al negocio**, y si lo que van a usar son probabilidades, esa métrica es el **log-loss** (o el AUC, si lo único que importa es ordenar clientes). Elegir `C` maximizando el porcentaje de aciertos es usar la métrica ciega de la primera dinámica —la que empataba a los tres modelos— para calibrar el único parámetro que controla el trade-off sesgo-varianza del modelo.
+
+En la práctica: `LogisticRegressionCV(scoring="neg_log_loss")`.
+
+#### Resumen
+
+| | Ridge (L2) | Lasso (L1) |
+|--|------------|------------|
+| **Efecto en los coeficientes** | Los encoge; ninguno llega a cero | Manda a cero los irrelevantes |
+| **Separación perfecta** | La controla | La controla |
+| **Multicolinealidad** | Reparte el efecto entre las correlacionadas | Escoge una y apaga las demás |
+| **Cuándo usarla** | Todas las variables aportan algo; se busca estabilidad | Se busca un modelo corto y auditable |
+| **Solver en `scikit-learn`** | `lbfgs` (default) | `saga` o `liblinear` |
 
 ---
 
