@@ -645,6 +645,118 @@ git add archivo-con-conflicto
 git commit -m "Resuelve conflictos de merge"
 ```
 
+### Traer cambios nuevos del repositorio del curso a su fork
+
+Su fork se "congeló" en el momento en que lo crearon. Cuando yo agregue una
+notebook nueva o modifique un capítulo, esos cambios no les van a aparecer
+solos — tienen que traerlos explícitamente. Para eso necesitan un segundo
+remoto, además de `origin` (que apunta a *su* fork): uno que apunte al
+repositorio original del curso. A ese segundo remoto se le llama, por
+convención, `upstream`.
+
+#### Paso 0: agregar el remoto `upstream` (una sola vez)
+
+```bash
+git remote -v
+```
+
+Si no ven una línea que diga `upstream`, agréguenlo:
+
+```bash
+git remote add upstream https://github.com/nasaul/mineria_datos.git
+```
+
+#### Paso 1: guardar su trabajo antes de traer nada
+
+Si están en medio de algo —modificaron archivos pero no han hecho commit—
+háganlo primero, aunque el trabajo esté a medias. **Por qué:** vamos a traer
+cambios de otro remoto, y Git necesita saber con precisión qué es "lo suyo" y
+qué es "lo nuevo". Si dejan cambios sin commitear, Git puede negarse a hacer
+el merge o mezclarlos de forma confusa.
+
+Primero revisen qué tienen sin guardar:
+
+```bash
+git status
+```
+
+Van a ver archivos modificados y, quizás, archivos nuevos sin rastrear. **No
+usen `git add .` aquí.** Ese comando agrega *todo* lo que haya en la carpeta,
+sin que lo revisen: si además de su tarea tienen un CSV que descargaron para
+probar algo, una carpeta `.ipynb_checkpoints/` que generó Jupyter, o un
+experimento a medias en otro archivo, todo eso se cuela en el mismo commit.
+En el peor caso, así es como un dataset pesado o una API key guardada por
+accidente terminan en el historial de Git —y sacarlos después es mucho más
+trabajo que no meterlos.
+
+Agreguen explícitamente solo lo que reconocen como su trabajo:
+
+```bash
+git add notebooks/mi_tarea.ipynb chapters/mis_notas.md
+git commit -m "wip: avance antes de sincronizar con upstream"
+```
+
+Si tienen dudas sobre si un archivo debería entrar, déjenlo fuera: no se
+pierde, simplemente no queda en ese commit. Y si quieren confirmar
+exactamente qué van a guardar antes de comprometerse:
+
+```bash
+git diff --staged
+```
+
+#### Opción A: solo quieren un archivo puntual (el caso más común)
+
+Si lo único que quieren es, por ejemplo, la notebook nueva de una clase, sin
+tocar nada más de su repo, no hace falta un merge completo. Tráiganse ese
+archivo específico:
+
+```bash
+git fetch upstream
+git checkout upstream/main -- notebooks/mall_customers_kmeans.ipynb
+```
+
+Esto copia ese archivo exactamente como está en el repositorio del curso a su
+carpeta de trabajo, sin fusionar nada más y sin ningún riesgo de conflicto con
+el resto de sus archivos.
+
+#### Opción B: quieren sincronizar todo el repositorio
+
+Cuando quieran traer *todos* los cambios nuevos que se hayan subido —no solo
+un archivo— usen `merge` en vez de `checkout`. La parte importante es decirle
+a Git que, si un mismo archivo cambió tanto en el repo del curso como en el
+suyo, **gane su versión**:
+
+```bash
+git fetch upstream
+git merge upstream/main -X ours
+```
+
+Qué hace `-X ours` con cada archivo:
+
+- Si **solo cambió upstream** (lo modifiqué yo, ustedes no lo tocaron): se
+  actualiza normal, sin conflicto.
+- Si es un archivo **nuevo** que agregué (como una notebook de una clase
+  nueva): se agrega directo a su repo.
+- Si **cambió en ambos lados** (ustedes lo modificaron y yo también): Git no
+  intenta mezclar línea por línea — se queda completa **su versión**.
+
+Esa última regla es la que responde la pregunta de "cómo favorecer mis
+archivos": cualquier archivo que ustedes ya hayan tocado se queda como lo
+dejaron, y solo lo genuinamente nuevo entra sin pelear.
+
+**Nota:** si quieren ver qué traía la versión del curso de un archivo donde
+`-X ours` se quedó con la suya, pueden verla sin fusionar nada:
+
+```bash
+git show upstream/main:ruta/al/archivo.py
+```
+
+#### Paso final: subir el resultado a su fork
+
+```bash
+git push origin nombre-de-su-rama
+```
+
 ### Flujo de trabajo recomendado para el curso
 
 Para trabajar en sus tareas y proyectos:
